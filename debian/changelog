@@ -1,3 +1,9 @@
+casper (1.173jolicloud1) robby; urgency=low
+
+  * Depend on JC's new epoch initramfs-tools
+
+ -- Adam McDaniel <adam@jolicloud.org>  Sun, 07 Mar 2010 12:00:18 -0700
+
 casper (1.173) jaunty; urgency=low
 
   * Don't use head -n1 in where_is_mounted, we don't have head in the
