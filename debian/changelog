@@ -1,3 +1,10 @@
+casper (1.174jolicloud1) robby; urgency=low
+
+  * Rebased with 1.174 from karmic
+    - Set "Jolicloud" values in casper.conf
+
+ -- Adam McDaniel <adam@jolicloud.org>  Sun, 07 Mar 2010 15:55:09 -0700
+
 casper (1.174) karmic; urgency=low
 
   * debian/control: Increase dependency on initramfs-tools to get the version
