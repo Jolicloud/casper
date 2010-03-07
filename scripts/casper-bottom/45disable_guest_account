@@ -1,0 +1,25 @@
+#!/bin/sh
+
+PREREQ=""
+DESCRIPTION="Disabling gdm guest session functionality..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+chroot /root dpkg -P gdm-guest-session || true
+
+log_end_msg

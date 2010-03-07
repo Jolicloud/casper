@@ -1,0 +1,170 @@
+#!/bin/sh
+# If you change this, please also change the copy in ubiquity-hooks/30accessibility.
+
+PREREQ=""
+DESCRIPTION="Configuring accessibility options..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+gconf_version=$(chroot /root /usr/bin/dpkg-query -W --showformat='${Version}' gconf2 2>/dev/null) || gconf_version=""
+
+gct() {
+    if [ "$gconf_version" ]; then
+        chroot /root sudo -u "$USERNAME" gconftool-2 "$@"
+    fi
+}
+
+kderc_addtoprefixes() {
+    if [ -e "/root/etc/kde4rc" ]; then
+        sed -i "s|\\(prefixes=/usr/share/kubuntu-default-settings/kde-profile/default/\\)|\\1,$1|" /root/etc/kde4rc
+    fi
+}
+
+# Code to remove an applet from the default panel setup
+# This is rather hacky, but I can't think of a one or two line regular
+# expression to do this any more efficiently. Patches welcome.
+# In addition, setting these via gconf also doesn't work for some reason.
+remove_applet()
+{
+	local line_no prior_line next_line
+
+	line_no=$(grep -n "<string>$1</string>" /root/usr/share/gconf/defaults/05_panel-default-setup.entries | cut -f 1 -d :)
+	prior_line=$((line_no-1))
+	next_line=$((line_no+1))
+	sed -i -n "${prior_line},${next_line}!p" /root/usr/share/gconf/defaults/05_panel-default-setup.entries
+	chroot /root update-gconf-defaults
+}
+
+for x in $(cat /proc/cmdline); do
+                case $x in
+                        # Lesser Visual Impairment
+                        access=v1)
+                        gct -s -t string /desktop/gnome/interface/gtk_theme HighContrastLargePrint
+                        gct -s -t string /desktop/gnome/interface/icon_theme HighContrast
+                        gct -s -t string /desktop/gnome/interface/monospace_font_name "monospace 18"
+                        gct -s -t string /desktop/gnome/interface/font_name "sans 18"
+                        gct -s -t string /apps/metacity/general/theme Atlanta
+                        gct -s -t string /desktop/gnome/background/picture_filename ""
+                        gct -s -t string /desktop/gnome/background/picture_options none
+                        gct -s -t string /desktop/gnome/background/primary_color \#666666
+                        gct -s -t string /desktop/gnome/background/secondary_color \#7F7F7F
+                        gct -s -t string /desktop/gnome/background/color_shading_type solid
+                        gct -s -t int /desktop/gnome/peripherals/mouse/cursor_size 48
+                        gct -s -t string /desktop/gnome/peripherals/mouse/cursor_theme whiteglass
+
+                        kderc_addtoprefixes /usr/share/kubuntu-default-settings/kde-profile/lesser-visual-impairment/
+                        if [ -d /root/usr/share/xubuntu-default-settings/accessibility ]; then
+                            cp -a /root/usr/share/xubuntu-default-settings/accessibility/* /root/etc/xdg/
+                        fi
+                        ;;
+                        # Moderate Visual Impairment
+                        access=v2)
+                        gct -s -t bool /desktop/gnome/interface/accessibility true
+                        gct -s -t bool /desktop/gnome/applications/at/visual/startup true
+                        gct -s -t string /desktop/gnome/applications/at/visual/exec orca
+			if [ -x /root/usr/bin/orca ]; then
+				mkdir -p /root/home/$USERNAME/.orca
+				echo "import orca.settings" >> /root/home/$USERNAME/.orca/user-settings.py
+				echo "orca.settings.enableSpeech = False" >> /root/home/$USERNAME/.orca/user-settings.py
+				echo "orca.settings.enableMagnifier = True" >> /root/home/$USERNAME/.orca/user-settings.py
+				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.orca
+			fi
+                        gct -s -t bool /apps/gksu/disable-grab true
+                        gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
+                        sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /root/etc/sudoers
+                        kderc_addtoprefixes /usr/share/kubuntu-default-settings/kde-profile/lesser-visual-impairment/,/usr/share/kubuntu-default-settings/kde-profile/moderate-visual-impairment/
+                        ;;
+                        # Blindness
+                        access=v3)
+                        gct -s -t bool /desktop/gnome/interface/accessibility true
+                        gct -s -t bool /apps/gksu/disable-grab true
+                        gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
+                        gct -s -t bool /desktop/gnome/applications/at/visual/startup true
+                        gct -s -t string /desktop/gnome/applications/at/visual/exec orca
+                        remove_applet fast_user_switch
+			if [ -x /root/usr/bin/pulse-session ]; then
+				touch /root/home/$USERNAME/.pulse_a11y_nostart
+				chroot /root chown $USERNAME.$USERNAME /home/$USERNAME/.pulse_a11y_nostart
+				mkdir -p /root/home/$USERNAME/.pulse
+				echo "autospawn = no" > /root/home/$USERNAME/.pulse/client.conf
+				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.pulse
+			fi
+                        sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /root/etc/sudoers
+			if [ -x /root/usr/bin/orca ]; then
+				mkdir -p /root/home/$USERNAME/.orca
+				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.orca
+			fi
+                        ;;
+                        # Braille
+                        braille=ask)
+                        gct -s -t bool /desktop/gnome/interface/accessibility true
+                        gct -s -t bool /desktop/gnome/applications/at/visual/startup true
+                        gct -s -t string /desktop/gnome/applications/at/visual/exec orca
+			if [ -x /root/usr/bin/orca ]; then
+				mkdir -p /root/home/$USERNAME/.orca
+				echo "import orca.settings" >> /root/home/$USERNAME/.orca/user-settings.py
+				echo "orca.settings.enableSpeech = False" >> /root/home/$USERNAME/.orca/user-settings.py
+				echo "orca.settings.enableBraille = True" >> /root/home/$USERNAME/.orca/user-settings.py
+				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.orca
+			fi
+                        gct -s -t bool /apps/gksu/disable-grab true
+                        gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
+                        remove_applet fast_user_switch
+                        sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /root/etc/sudoers
+			if [ -x /root/usr/bin/pulse-session ]; then
+				touch /root/home/$USERNAME/.pulse_a11y_nostart
+				chroot /root chown $USERNAME.$USERNAME /home/$USERNAME/.pulse_a11y_nostart
+				mkdir -p /root/home/$USERNAME/.pulse
+				echo "autospawn = no" > /root/home/$USERNAME/.pulse/client.conf
+				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.pulse
+			fi
+                        ;;
+                        # Minor Motor Difficulties
+                        access=m1)
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/enable true
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/mousekeys_enable true
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/stickykeys_enable true
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/stickykeys_modifier_beep true
+                        gct -s -t bool /desktop/accessibility/gnome/keyboard/stickykeys_two_key_off false
+                        gct -s -t bool /desktop/gnome/peripherals/keyboard/repeat true
+                        gct -s -t int /desktop/gnome/peripherals/keyboard/delay 700
+                        gct -s -t int /desktop/gnome/peripherals/keyboard/rate 10
+                        gct -s -t bool /apps/gksu/disable-grab true
+                        kderc_addtoprefixes /usr/share/kubuntu-default-settings/kde-profile/minor-motor-difficulties/
+                        if [ -e /root/etc/xdg/xfce4/mcs_settings/keyboard.xml ]; then
+                            sed -i 's/0/1/' /root/etc/xdg/xfce4/mcs_settings/keyboard.xml
+                        fi 
+                        ;;
+                        # Motor Difficulties - pointing devices
+                        access=m2)
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/enable true
+			gct -s -t bool /desktop/gnome/interface/accessibility true
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/stickykeys_enable true
+                        gct -s -t bool /desktop/gnome/accessibility/keyboard/stickykeys_modifier_beep false
+                        gct -s -t bool /desktop/accessibility/gnome/keyboard/stickykeys_two_key_off false
+                        gct -s -t bool /desktop/gnome/applications/at/mobility/startup true
+                        gct -s -t string /desktop/gnome/applications/at/mobility/exec onboard
+
+                        kderc_addtoprefixes /usr/share/kubuntu-default-settings/kde-profile/minor-motor-difficulties/,/usr/share/kubuntu-default-settings/kde-profile/motor-difficulties-pointing-devices/
+                        if [ -e /root/etc/xdg/xfce4/mcs_settings/keyboard.xml ]; then
+                            sed -i '/Sticky/ s/0/1/' /root/etc/xdg/xfce4/mcs_settings/keyboard.xml
+                        fi 
+                        ;;
+		esac
+done
+log_end_msg

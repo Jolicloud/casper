@@ -1,0 +1,26 @@
+#!/bin/sh
+# workaround for AppArmor bug #131976
+
+PREREQ=""
+DESCRIPTION="Disabling AppArmor (does not work with stacked file systems)..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+chroot /root update-rc.d -f apparmor remove
+
+log_end_msg

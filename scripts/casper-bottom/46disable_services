@@ -1,0 +1,33 @@
+#!/bin/sh
+
+PREREQ=""
+DESCRIPTION="Disabling unnecessary services..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+#Mythbuntu specific
+if [ -d "/root/usr/share/mythbuntu" ]; then
+    chroot /root update-rc.d -f mythtv-backend remove
+    chroot /root update-rc.d -f mysql remove
+    chroot /root update-rc.d -f apache2 remove
+    chroot /root update-rc.d -f ntp remove
+    chroot /root update-rc.d -f samba remove
+    chroot /root update-rc.d -f ssh remove
+fi
+
+log_end_msg

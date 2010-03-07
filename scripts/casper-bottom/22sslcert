@@ -1,0 +1,27 @@
+#! /bin/sh
+
+PREREQ=""
+DESCRIPTION="Regenerating SSL certificate..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+if [ -x /root/usr/sbin/make-ssl-cert ]; then
+	chroot /root /usr/sbin/make-ssl-cert generate-default-snakeoil --force-overwrite
+fi
+
+log_end_msg
