@@ -20,23 +20,16 @@ esac
 
 log_begin_msg "$DESCRIPTION"
 
-# chroot needed to handle symlinks correctly
-if chroot /root [ -f /etc/gdm/gdm-cdd.conf ]; then
-    GDMCONF=/etc/gdm/gdm-cdd.conf
-else
-    GDMCONF=/etc/gdm/gdm.conf
-fi
-
-# chroot needed to handle symlinks correctly
-if chroot /root [ -f ${GDMCONF} ]; then
+if [ -d /root/etc/gdm ]; then
     # Configure GDM autologin
-    chroot /root sed -i \
-        -e "s/^AutomaticLoginEnable=.*\$/AutomaticLoginEnable=true/" \
-        -e "s/^AutomaticLogin=.*\$/AutomaticLogin=$USERNAME/" \
-        -e "s/^TimedLoginEnable=.*\$/TimedLoginEnable=true/" \
-        -e "s/^TimedLogin=.*\$/TimedLogin=$USERNAME/" \
-        -e "s/^TimedLoginDelay=.*\$/TimedLoginDelay=10/" \
-        ${GDMCONF}
+    cat > /root/etc/gdm/custom.conf <<EOF
+[daemon]
+AutomaticLoginEnable=true
+AutomaticLogin=$USERNAME
+TimedLoginEnable=true
+TimedLogin=$USERNAME
+TimedLoginDelay=10
+EOF
 fi
 
 if [ -f /root/etc/kde4/kdm/kdmrc ]; then

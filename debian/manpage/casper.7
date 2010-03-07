@@ -36,6 +36,9 @@ If you specify one of this two equivalent forms, casper will first try to find t
 .BI "live-media-offset=" BYTES
 This way you could tell casper that your image starts at offset BYTES in the above specified or autodiscovered device, this could be useful to hide the debian-live iso or image inside another iso or image, to create "clean" images.
 .TP
+.BI "live-media-path=" PATH
+Sets the path to the live filesystem on the medium. By default, it is set to "/casper" and you should not change that unless you have customized your media accordingly.
+.TP
 .BI "locale=" LOCALE " | debian-installer/locale=" LOCALE
 Configure the running locale as specified, if not present the live-media rootfs configured locale will be used and if also this one misses casper behave as "locale=en_US.UTF-8" was specified. If only 2 lowercase letter are specified (like "it"), the "maybe wanted" locale is generated (like it:IT.UTF-8), in this case if also "keyb=" is unspecified is set with those 2 lowercase letters (keyb=it).
 .TP

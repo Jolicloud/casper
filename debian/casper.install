@@ -6,4 +6,7 @@ bin/casper-reconfigure		usr/share/casper
 bin/casper-snapshot		sbin
 hooks				usr/share/initramfs-tools
 scripts				usr/share/initramfs-tools
-conf.d              usr/share/initramfs-tools
+conf.d				usr/share/initramfs-tools
+conf-hooks.d			usr/share/initramfs-tools
+casper-md5check/casper-md5check	usr/lib/casper
+casper.conf			etc

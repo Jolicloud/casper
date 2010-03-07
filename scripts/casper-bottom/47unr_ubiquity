@@ -1,0 +1,39 @@
+#!/bin/sh
+
+PREREQ=""
+DESCRIPTION="Set ubiquity favourite for UNR..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+gconf_version=$(chroot /root /usr/bin/dpkg-query -W --showformat='${Version}' gconf2 2>/dev/null) || gconf_version=""
+
+gct() {
+    if [ "$gconf_version" ]; then
+        chroot /root sudo -u "$USERNAME" gconftool-2 "$@"
+    fi
+}
+
+if ! gct -g /apps/netbook-launcher/favorites/favorites_list | grep -q ubiquity; then
+    gct -s -t string /apps/netbook-launcher/favorites/ubiquity/type application
+    gct -s -t string /apps/netbook-launcher/favorites/ubiquity/desktop_file /usr/share/applications/ubiquity-gtkui.desktop
+    favs=$(gct -g /apps/netbook-launcher/favorites/favorites_list)
+    gct -s -t list --list-type=string /apps/netbook-launcher/favorites/favorites_list $(echo "$favs" | sed -e 's/]$/,ubiquity]/')
+fi
+
+log_end_msg
+

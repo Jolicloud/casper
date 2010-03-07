@@ -1,0 +1,28 @@
+#! /bin/sh
+
+PREREQ=""
+DESCRIPTION="Adding installer to Kubuntu Netbook favourites..."
+
+. /scripts/casper-functions
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+log_begin_msg "$DESCRIPTION"
+
+if [ -e "/root/usr/share/kubuntu-netbook-default-settings/share/config/moved_plasma-netbook-appletsrc" ]; then
+    mv /root/usr/share/kubuntu-netbook-default-settings/share/config/moved_plasma-netbook-appletsrc \
+       /root/usr/share/kubuntu-netbook-default-settings/share/config/plasma-netbook-appletsrc
+fi
+
+log_end_msg

@@ -182,7 +182,12 @@ if [ -x /root/bin/setupcon ] && [ -f /root/etc/default/console-setup ]; then
         casper-preseed /root console-setup/optionscode '' false
         casper-preseed /root console-setup/codesetcode '' false
 
-        sed -i 's/CONSOLE_SCREEN=$/CONSOLE_SCREEN=setupcon/; t END; b; : END; n; b END' /root/etc/init.d/usplash
+        if [ -f /root/etc/init.d/usplash ]; then
+                sed -i 's/CONSOLE_SCREEN=$/CONSOLE_SCREEN=setupcon/; t END; b; : END; n; b END' /root/etc/init.d/usplash
+        elif [ -f /root/etc/init/usplash.conf ]; then
+                sed -i '/^post-stop script/a\
+    setupcon' /root/etc/init/usplash.conf
+        fi
 else
         chroot /root /usr/sbin/install-keymap $kbd
         casper-preseed /root debian-installer/keymap "$kbd"

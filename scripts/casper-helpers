@@ -46,7 +46,7 @@ get_fstype() {
         echo $FSTYPE
         return 0
     fi
-    /lib/udev/vol_id -t $1 2>/dev/null
+    /sbin/blkid -s TYPE -o value $1 2>/dev/null
 }
 
 where_is_mounted() {
@@ -186,7 +186,7 @@ find_cow_device() {
     for sysblock in $(echo /sys/block/* | tr ' ' '\n' | grep -v loop); do
         for dev in $(subdevices "${sysblock}"); do
             devname=$(sys2dev "${dev}")
-            if [ "$(/lib/udev/vol_id -l $devname 2>/dev/null)" = "${pers_label}" ]; then
+            if [ "$(/sbin/blkid -s LABEL -o value $devname 2>/dev/null)" = "${pers_label}" ]; then
                 echo "$devname"
                 return
             # Do not add any filesystem types here that might be able to
