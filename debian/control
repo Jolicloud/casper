@@ -10,7 +10,7 @@ Package: casper
 Architecture: any
 Section: misc
 Priority: extra
-Depends: initramfs-tools (>= 1:0.92b), busybox-initramfs (>= 1:1.1.3-4ubuntu3), dmsetup, user-setup, sudo, eject, uuid-runtime, localechooser-data (>= 2.03ubuntu1)
+Depends: initramfs-tools (>= 0.92bubuntu30), busybox-initramfs (>= 1:1.1.3-4ubuntu3), dmsetup, user-setup, sudo, eject, uuid-runtime, localechooser-data (>= 2.03ubuntu1), util-linux (>= 2.15-1)
 Conflicts: usplash (<< 0.4-43)
 Breaks: genext2fs (<< 1.4.1)
 Tag: admin::boot, admin::filesystem, implemented-in::shell, protocol::smb, role::plugin, scope::utility, special::completely-tagged, works-with-format::iso9660
