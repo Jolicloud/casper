@@ -1,3 +1,11 @@
+casper (1.206jolicloud1) robby; urgency=low
+
+  * Backported karmic into robby's casper (1.173jolicloud2)
+    - Depend on JC's new epoch initramfs-tools
+    - Set "Jolicloud" values in casper.conf
+
+ -- Adam McDaniel <adam@jolicloud.org>  Sun, 07 Mar 2010 12:19:58 -0700
+
 casper (1.206) karmic; urgency=low
 
   * Fix broken /cdrom writable test in 43disable_initramfs
