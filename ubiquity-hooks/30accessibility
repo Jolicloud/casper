@@ -28,6 +28,7 @@ remove_applet()
         local line_no prior_line next_line
 
         line_no=$(grep -n "<string>$1</string>" /target/usr/share/gconf/defaults/05_panel-default-setup.entries | cut -f 1 -d :)
+        [ "$line_no" ] || return
         prior_line=$((line_no-1))
         next_line=$((line_no+1))
         sed -i -n "${prior_line},${next_line}!p" /target/usr/share/gconf/defaults/05_panel-default-setup.entries
@@ -92,8 +93,9 @@ for x in $(cat /proc/cmdline); do
                         gct -s -t string /desktop/gnome/applications/at/visual/exec orca
                         remove_applet fast_user_switch
 			if [ -x /target/usr/bin/pulse-session ]; then
-				touch /target/home/$TARGET_USERNAME/.pulse_a11y_nostart
-				chroot /target chown $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse_a11y_nostart
+				mkdir -p /target/var/lib/pulseaudio
+				touch /target/var/lib/pulseaudio/pulse_a11y_nostart
+				chroot /target chown root.root /var/lib/pulseaudio/pulse_a11y_nostart
 				mkdir -p /target/home/$TARGET_USERNAME/.pulse
 				echo "autospawn = no" > /target/home/$TARGET_USERNAME/.pulse/client.conf
 				chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse
@@ -135,8 +137,9 @@ for x in $(cat /proc/cmdline); do
                         remove_applet fast_user_switch
                         sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /target/etc/sudoers
 			if [ -x /target/usr/bin/pulse-session ]; then
-				touch /target/home/$TARGET_USERNAME/.pulse_a11y_nostart
-				chroot /target chown $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse_a11y_nostart
+				mkdir -p /target/var/lib/pulseaudio
+				touch /target/var/lib/pulseaudio/pulse_a11y_nostart
+				chroot /target chown root.root /var/lib/pulseaudio/pulse_a11y_nostart
 				mkdir -p /target/home/$TARGET_USERNAME/.pulse
 				echo "autospawn = no" > /target/home/$TARGET_USERNAME/.pulse/client.conf
 				chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse

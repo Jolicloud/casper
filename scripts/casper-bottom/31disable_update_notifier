@@ -25,7 +25,7 @@ log_begin_msg "$DESCRIPTION"
 # report handling.
 chroot /root dpkg-divert --add --rename --quiet \
 	/usr/lib/update-notifier/apt-check
-ln -s /bin/true /root/usr/lib/update-notifier/apt-check
+ln -sf /bin/true /root/usr/lib/update-notifier/apt-check
 
 # For KDE, adept_notifier's only useful function at the moment is an
 # 'apt-get update' equivalent, so we disable it entirely.
