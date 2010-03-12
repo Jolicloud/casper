@@ -1,3 +1,9 @@
+casper (1.174jolicloud2) robby; urgency=low
+
+  * Fix upgrade process of /etc/casper.conf due to PreBeta ISO snafu
+
+ -- Adam McDaniel <adam@jolicloud.org>  Fri, 12 Mar 2010 10:33:01 -0700
+
 casper (1.174jolicloud1) robby; urgency=low
 
   * Rebased with 1.174 from karmic
