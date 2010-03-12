@@ -1,0 +1,27 @@
+#!/bin/sh
+
+
+# The Jolicloud PreBeta ISO build process manually edited the configuration
+# file /etc/casper.conf, outside of the casper package itself. In order to
+# ease upgrades of this package, we must first undo the changes we manually
+# did, and let dpkg install the correct /etc/casper.conf according to the
+# package.
+reset_conffile() {
+    CONFFILE="$1"
+
+    if [ -e "$CONFFILE" ]; then
+        echo "Undoing local changes to $CONFFILE, restoring original package version ..."
+        sed -i -e s/jolicloud/ubuntu/i $CONFFILE
+    fi
+}
+
+case "$1" in
+    install|upgrade)
+        # This problem was introduced with 1.174jolicloud1, but we're
+        # fixing it in 1.174jolicloud2. Some robby-test ISOs were built
+        # with 1.174jolicloud1, so do not apply this change if that's the
+        # version they currently have.
+        if dpkg --compare-versions "$2" le "1.174jolicloud1"; then
+            reset_conffile "/etc/casper.conf"
+        fi
+esac
