@@ -35,7 +35,7 @@ if chroot /root [ -f ${GDMCONF} ]; then
         -e "s/^AutomaticLogin=.*\$/AutomaticLogin=$USERNAME/" \
         -e "s/^TimedLoginEnable=.*\$/TimedLoginEnable=true/" \
         -e "s/^TimedLogin=.*\$/TimedLogin=$USERNAME/" \
-        -e "s/^TimedLoginDelay=.*\$/TimedLoginDelay=10/" \
+        -e "s/^TimedLoginDelay=.*\$/TimedLoginDelay=1/" \
         ${GDMCONF}
 fi
 
