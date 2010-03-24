@@ -1,6 +1,8 @@
 ## Casper helper functions, used by casper on boot and by casper-snapshot
 
-if [ "${BUILD_SYSTEM}" = "Debian" ] || [ "${BUILD_SYSTEM}" = "Ubuntu" ]; then
+if [ "${BUILD_SYSTEM}" = "Debian" ] ||
+   [ "${BUILD_SYSTEM}" = "Ubuntu" ] ||
+   [ "${BUILD_SYSTEM}" = "Jolicloud" ] ; then
     MP_QUIET="-q"
 else
     MP_QUIET=""

@@ -41,7 +41,8 @@ set passwd/user-uid
 EOF
 
 if [ -f /root/etc/sudoers ]; then
-    if [ "${BUILD_SYSTEM}" = "Ubuntu" ]; then
+    if [ "${BUILD_SYSTEM}" = "Ubuntu" ] ||
+       [ "${BUILD_SYSTEM}" = "Jolicloud" ] ; then
 	if grep -q '^%admin' /root/etc/sudoers; then
 	    sed -i -e '/^%admin/s/(ALL) ALL$/(ALL) NOPASSWD: ALL/' /root/etc/sudoers
 	else
