@@ -1,3 +1,10 @@
+casper (1.174jolicloud3) robby; urgency=low
+
+  * Modified initramfs scripts to honour BUILD_SYSTEM = "Jolicloud";
+    fixes /etc/sudoers NOPASSWD regression when booting ISO
+
+ -- Adam McDaniel <adam@jolicloud.org>  Wed, 24 Mar 2010 10:25:12 -0600
+
 casper (1.174jolicloud2) robby; urgency=low
 
   * Fix upgrade process of /etc/casper.conf due to PreBeta ISO snafu
