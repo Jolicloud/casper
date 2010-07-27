@@ -1,3 +1,9 @@
+casper (1.174jolicloud5) robby; urgency=low
+
+  * Changed the shutdown message to say "Remove USB key"
+
+ -- Adam McDaniel <adam@jolicloud.org>  Mon, 26 Jul 2010 20:46:41 -0600
+
 casper (1.174jolicloud4) robby; urgency=low
 
   * Set TimedLoginDelay=1 in GDM; ugly hack for GMA500 until GDM stutter
