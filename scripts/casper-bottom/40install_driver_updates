@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Installing driver updates..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -17,6 +15,8 @@ prereqs)
        exit 0
        ;;
 esac
+
+. /scripts/casper-functions
 
 if [ ! -d /tmp/driver-updates ]; then
 	exit 0
@@ -34,7 +34,13 @@ cp -a /tmp/driver-updates/*.deb "/root$install_dir/"
 for deb in "/root$install_dir"/*; do
 	[ -f "$deb" ] || continue
 	debbase="${deb##*/}"
-	if ! chroot /root dpkg -i "$install_dir/$debbase"; then
+	DEBIAN_HAS_FRONTEND= DEBCONF_REDIR= \
+	DEBIAN_FRONTEND=noninteractive \
+	chroot /root dpkg -i "$install_dir/$debbase"
+	ret=$?
+	if [ $ret != 0 ]; then
+		DEBIAN_HAS_FRONTEND= DEBCONF_REDIR= \
+		DEBIAN_FRONTEND=noninteractive \
 		chroot /root dpkg -P "${debbase%%_*}"
 	fi
 done

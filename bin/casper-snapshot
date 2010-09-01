@@ -231,7 +231,7 @@ Defaults ()
 	if [ -n "${SNAP_RSTRING}" ]; then
 		COW=$(echo "${SNAP_RSTRING}" | cut -f1 -d ':')
 		DEV=$(echo "${SNAP_RSTRING}" | cut -f2 -d ':')
-		DEST=$(echo "${SNAP_RSTRING}" | cut -f3 -d ':')
+		DEST="${MOUNTP}/$(echo "${SNAP_RSTRING}" | cut -f3 -d ':')"
 		
 		case "${DEST}" in
 			*.cpio.gz)
@@ -243,7 +243,7 @@ Defaults ()
 			*.ext2)
 				TYPE="ext2" ;;
 			*)
-				Usage "Unregognized String" ;;
+				Usage "Unrecognized String" ;;
 		esac
 	else
 		DEF_COW="/cow"

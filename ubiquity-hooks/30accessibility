@@ -13,6 +13,10 @@ gct() {
     chroot /target sudo -u "$TARGET_USERNAME" gconftool-2 "$@"
 }
 
+gct_gdm() {
+    chroot /target sudo -u gdm gconftool-2 "$@"
+}
+
 kderc_addtoprefixes() {
     if [ -e "/target/etc/kde4rc" ]; then
         sed -i "s|\\(prefixes=/usr/share/kubuntu-default-settings/kde-profile/default/\\)|\\1,$1|" /target/etc/kde4rc
@@ -28,6 +32,7 @@ remove_applet()
         local line_no prior_line next_line
 
         line_no=$(grep -n "<string>$1</string>" /target/usr/share/gconf/defaults/05_panel-default-setup.entries | cut -f 1 -d :)
+        [ "$line_no" ] || return
         prior_line=$((line_no-1))
         next_line=$((line_no+1))
         sed -i -n "${prior_line},${next_line}!p" /target/usr/share/gconf/defaults/05_panel-default-setup.entries
@@ -90,19 +95,19 @@ for x in $(cat /proc/cmdline); do
                         gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
                         gct -s -t bool /desktop/gnome/applications/at/visual/startup true
                         gct -s -t string /desktop/gnome/applications/at/visual/exec orca
+                        gct -s -t string /apps/empathy/conversation/theme classic                        
+                        gct_gdm -s -t bool /desktop/gnome/interface/accessibility true
+                        gct_gdm -s -t bool /desktop/gnome/applications/at/visual/startup true
+                        gct_gdm -s -t string /desktop/gnome/applications/at/visual/exec orca 
+                        gct_gdm -s -t bool /desktop/gnome/applications/at/screen_reader_enabled true
                         remove_applet fast_user_switch
-			if [ -x /target/usr/bin/pulse-session ]; then
-				touch /target/home/$TARGET_USERNAME/.pulse_a11y_nostart
-				chroot /target chown $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse_a11y_nostart
-				mkdir -p /target/home/$TARGET_USERNAME/.pulse
-				echo "autospawn = no" > /target/home/$TARGET_USERNAME/.pulse/client.conf
-				chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse
-			fi
                         sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /target/etc/sudoers
 			if [ -x /target/usr/bin/orca ]; then
 				if [ -f /home/$USERNAME/.orca/user-settings.py ]; then
 					cp -r /home/$USERNAME/.orca /target/home/$TARGET_USERNAME/
 					chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.orca
+					cp -r /home/$USERNAME/.orca /target/var/lib/gdm
+					chroot /target chown -R gdm.gdm /var/lib/gdm/.orca
 				else
 					mkdir -p /target/home/$TARGET_USERNAME/.orca
 					chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.orca
@@ -122,25 +127,27 @@ for x in $(cat /proc/cmdline); do
 				if [ -f /home/$USERNAME/.orca/user-settings.py ]; then
 					cp -r /home/$USERNAME/.orca /target/home/$TARGET_USERNAME/
 					chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.orca
+					cp -r /home/$USERNAME/.orca /target/var/lib/gdm
+					chroot /target chown -R gdm.gdm /var/lib/gdm/.orca
 				else
 	                                mkdir -p /target/home/$TARGET_USERNAME/.orca
 					echo "import orca.settings" >> /target/home/$TARGET_USERNAME/.orca/user-settings.py
 	                                echo "orca.settings.enableSpeech = False" >> /target/home/$TARGET_USERNAME/.orca/user-settings.py
 	                                echo "orca.settings.enableBraille = True" >> /target/home/$TARGET_USERNAME/.orca/user-settings.py
 					chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.orca
+					cp -r /home/$TARGET_USERNAME/.orca /target/var/lib/gdm
+					chroot /target chown -R gdm.gdm /var/lib/gdm/.orca
 				fi
                         fi
                         gct -s -t bool /apps/gksu/disable-grab true
                         gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
+                        gct -s -t string /apps/empathy/conversation/theme classic                        
+                        gct_gdm -s -t bool /desktop/gnome/interface/accessibility true
+                        gct_gdm -s -t bool /desktop/gnome/applications/at/visual/startup true
+                        gct_gdm -s -t string /desktop/gnome/applications/at/visual/exec orca 
+                        gct_gdm -s -t bool /desktop/gnome/applications/at/screen_reader_enabled true
                         remove_applet fast_user_switch
                         sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /target/etc/sudoers
-			if [ -x /target/usr/bin/pulse-session ]; then
-				touch /target/home/$TARGET_USERNAME/.pulse_a11y_nostart
-				chroot /target chown $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse_a11y_nostart
-				mkdir -p /target/home/$TARGET_USERNAME/.pulse
-				echo "autospawn = no" > /target/home/$TARGET_USERNAME/.pulse/client.conf
-				chroot /target chown -R $TARGET_USERNAME.$TARGET_USERNAME /home/$TARGET_USERNAME/.pulse
-			fi
                         ;;
                         # Minor Motor Difficulties
                         access=m1)

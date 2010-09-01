@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Loading preseed file..."
 
-. /scripts/casper-functions
-
 prereqs ()
 {
 	echo "$PREREQ"
@@ -18,34 +16,55 @@ prereqs)
 	;;
 esac
 
+. /scripts/casper-functions
+load_confmodule
+
 log_begin_msg "$DESCRIPTION"
 
 if [ -e /preseed.cfg ]; then
-	chroot /root debconf-set-selections < /preseed.cfg
+	casper-set-selections /preseed.cfg
 fi
 
-location=
+network_started=
+
+start_network () {
+	[ -z "$network_started" ] || return
+	[ -z "$NETBOOT" ] || return
+
+	mount -n -o bind /sys /root/sys
+	mount -n -o bind /proc /root/proc
+	mount -n -o bind /dev /root/dev
+	mkdir -p /root/var/run/network
+	# Close inherited fd's to prevent debconf-communicate from
+	# continuing to run post-casper.
+	chroot /root dhclient eth0 3>&- 4<&-
+
+	network_started=1
+}
+
+stop_network () {
+	[ "$network_started" ] || return
+
+	chroot /root ifconfig eth0 down
+	umount /root/sys
+	umount /root/proc
+	umount /root/dev
+}
+
+locations=
 for x in $(cat /proc/cmdline); do
 	case $x in
 		preseed/file=*)
-			location="${x#preseed/file=}"
+			locations="${x#preseed/file=} $locations"
 			;;
 		file=*)
-			location="${x#file=}"
+			locations="${x#file=} $locations"
 			;;
 		url=*)
-			location="${x#url=}"
-			mount -n -o bind /sys /root/sys
-			mount -n -o bind /proc /root/proc
-			mount -n -o bind /dev /root/dev
-			mkdir -p /root/var/run/network
-			[ "$NETBOOT" ] || chroot /root dhclient eth0
-			chroot /root wget -P /tmp "$location"
-			[ "$NETBOOT" ] || chroot /root ifconfig eth0 down
-			umount /root/sys
-			umount /root/proc
-			umount /root/dev
-			location="/tmp/$(basename "$location")"
+			url_location="${x#url=}"
+			start_network
+			chroot /root wget -P /tmp "$url_location"
+			locations="/tmp/$(basename "$url_location") $locations"
 			;;
 		*/*\?=*)
 			question="${x%%\?=*}"
@@ -64,15 +83,23 @@ for x in $(cat /proc/cmdline); do
 	esac
 done
 
-if [ "$location" ]; then
-	chroot /root debconf-set-selections < "/root$location"
+if [ "$locations" ]; then
+	for item in $locations; do
+		casper-set-selections "/root$item"
+	done
 fi
 
-reply="$(echo "GET preseed/early_command" | chroot /root debconf-communicate -fnoninteractive casper)"
-if [ "${reply#0 }" != "$reply" ]; then
-	reply="${reply#0 }"
-	sh -c "$reply"
+if db_get preseed/early_command && [ "$RET" ]; then
+	EARLY="$RET"
+	if db_get preseed/allow-network && [ "$RET" = true ]; then
+		start_network
+	fi
+	DEBIAN_HAS_FRONTEND= DEBCONF_REDIR= \
+	DEBIAN_FRONTEND=noninteractive \
+	sh -c "$EARLY"
 fi
+
+stop_network
 
 # Clear out debconf database backup files to save memory.
 rm -f /root/var/cache/debconf/*.dat-old

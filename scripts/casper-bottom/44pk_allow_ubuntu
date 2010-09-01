@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Grant administrative PolicyKit pivilieges to default user..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -18,9 +16,12 @@ prereqs)
        ;;
 esac
 
+. /scripts/casper-functions
+
 log_begin_msg "$DESCRIPTION"
 
 # configure PolicyKit in live session
+mkdir -p /root/etc/PolicyKit
 cat << EOF > /root/etc/PolicyKit/PolicyKit.conf
 <?xml version="1.0" encoding="UTF-8"?> <!-- -*- XML -*- -->
 
@@ -39,6 +40,17 @@ cat << EOF > /root/etc/PolicyKit/PolicyKit.conf
     </match>
     <define_admin_auth group="admin"/>
 </config>
+EOF
+
+mkdir -p /root/var/lib/polkit-1/localauthority/10-vendor.d
+cat << EOF > /root/var/lib/polkit-1/localauthority/10-vendor.d/10-live-cd.pkla
+# Policy to allow the livecd user to bypass policykit
+[Live CD user permissions]
+Identity=unix-user:$USERNAME
+Action=*
+ResultAny=no
+ResultInactive=no
+ResultActive=yes
 EOF
 
 log_end_msg

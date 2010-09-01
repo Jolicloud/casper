@@ -1,6 +1,7 @@
-/* casper-md5check - a tool to check md5sums and talk to usplash
-   (C) Canonical Ltd 2006
+/* casper-md5check - a tool to check md5sums and talk to plymouth
+   (C) Canonical Ltd 2006, 2010
    Written by Tollef Fog Heen <tfheen@ubuntu.com>
+   Ported to plymouth by Steve Langasek <steve.langasek@ubuntu.com>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,13 +33,17 @@
 #include <math.h>
 #include <termios.h>
 
-#define USPLASH_FIFO "/dev/.initramfs/usplash_fifo"
-#define MAXTRIES 5
+#include <ply-boot-client.h>
+#include <ply-event-loop.h>
+
 #include "md5.h"
 #define DEBUG
 
 static int verbose = 1;
-static int got_usplash = 0;
+static int got_plymouth = 0;
+static ply_event_loop_t *ply_event_loop = NULL;
+
+int set_nocanonical_tty(int fd);
 
 void parse_cmdline(void) {
   FILE *cmdline = fopen("/proc/cmdline", "r");
@@ -60,73 +65,54 @@ void parse_cmdline(void) {
   fclose(cmdline);
 }
 
-int write_and_retry(int fd, char *s) {
-  int try = 0, ret = 0;
-  char *end;
-
-#ifdef DEBUG
-  fprintf(stderr, "-> %s\n", s);
-#endif
-
-  end = s + strlen(s)+1;
-
-  ret = write(fd, s, end - s);
-  while (s + ret < end && try < MAXTRIES) {
-    sleep(1);
-    s += ret;
-    ret = write(fd, s, strlen(s)+1);
-    try++;
-  }
-  return (s+ret == end ? 0 : 1);
+void plymouth_disconnected(void *user_data, ply_boot_client_t *client) {
+        printf("Disconnected from Plymouth\n");
+        got_plymouth = 0;
+	ply_event_loop_exit(ply_event_loop, 0);
 }
 
-void usplash_timeout(int fd, int timeout) {
+void plymouth_answer(void *user_data, const char *keys,
+                     ply_boot_client_t *client)
+{
+	ply_event_loop_exit(ply_event_loop, 0);
+}
+
+void plymouth_response(void *user_data, ply_boot_client_t *client) {
+  /* No response */
+}
+
+void plymouth_failure(ply_boot_client_t *client, char *format, ...) {
   char *s;
-
-  if (!got_usplash)
-    return;
-
-  asprintf(&s, "TIMEOUT %d", timeout);
-
-  write_and_retry(fd, s);
-
-  free(s);
-}
-
-void usplash_failure(int fd, char *format, ...) {
-  char *s, *s1;
   va_list argp;
 
   va_start(argp, format);
   vasprintf(&s, format, argp);
   va_end(argp);
 
-  if (got_usplash) {
-    asprintf(&s1, "FAILURE %s", s);
-
-    write_and_retry(fd, s1);
-
-    free(s1);
+  if (got_plymouth) {
+    ply_boot_client_tell_daemon_to_display_message(client, s,
+                                                   plymouth_response,
+                                                   plymouth_response, NULL);
+    ply_event_loop_process_pending_events(ply_event_loop);
   } else if (verbose)
     printf("%s\n", s);
 
   free(s);
 }
 
-void usplash_text(int fd, char *format, ...) {
-  char *s, *s1;
+void plymouth_text(ply_boot_client_t *client, char *format, ...) {
+  char *s;
   va_list argp;
 
   va_start(argp, format);
   vasprintf(&s, format, argp);
   va_end(argp);
 
-  if (got_usplash) {
-    asprintf(&s1, "TEXT %s", s);
-
-    write_and_retry(fd, s1);
-
-    free(s1);
+  if (got_plymouth) {
+    ply_boot_client_tell_daemon_to_display_message(client, s,
+                                                   plymouth_response,
+                                                   plymouth_response, NULL);
+    ply_event_loop_process_pending_events(ply_event_loop);
   } else if (verbose) {
     printf("%s...", s);
     fflush(stdout);
@@ -135,7 +121,7 @@ void usplash_text(int fd, char *format, ...) {
   free(s);
 }
 
-void usplash_urgent(int fd, char *format, ...) {
+void plymouth_prompt(ply_boot_client_t *client, char *format, ...) {
   char *s, *s1;
   va_list argp;
 
@@ -143,12 +129,41 @@ void usplash_urgent(int fd, char *format, ...) {
   vasprintf(&s, format, argp);
   va_end(argp);
 
-  if (got_usplash) {
-    asprintf(&s1, "TEXT-URGENT %s", s);
+  if (got_plymouth) {
+    asprintf(&s1, "keys:%s", s);
+    ply_boot_client_tell_daemon_to_display_message(client, s1,
+                                                   plymouth_response,
+                                                   plymouth_response, NULL);
 
-    write_and_retry(fd, s1);
+    ply_boot_client_ask_daemon_to_watch_for_keystroke(client, NULL,
+                                                      plymouth_answer,
+                                                      (ply_boot_client_response_handler_t)plymouth_answer, NULL);
+    ply_event_loop_run(ply_event_loop);
+    ply_boot_client_attach_to_event_loop(client, ply_event_loop);
+    ply_boot_client_tell_daemon_to_quit(client, 1, plymouth_response,
+                                        plymouth_response, NULL);
+    ply_event_loop_run(ply_event_loop);
+  } else {
+    printf("%s\n", s);
+    set_nocanonical_tty(0);
+    getchar();
+  }
+  free(s);
+}
 
-    free(s1);
+void plymouth_urgent(ply_boot_client_t *client, char *format, ...) {
+  char *s;
+  va_list argp;
+
+  va_start(argp, format);
+  vasprintf(&s, format, argp);
+  va_end(argp);
+
+  if (got_plymouth) {
+    ply_boot_client_tell_daemon_to_display_message(client, s,
+                                                   plymouth_response,
+                                                   plymouth_response, NULL);
+    ply_event_loop_process_pending_events(ply_event_loop);
   } else
     printf("%s\n", s);
 
@@ -156,27 +171,26 @@ void usplash_urgent(int fd, char *format, ...) {
 }
 
 
-void usplash_success(int fd, char *format, ...) {
-  char *s, *s1;
+void plymouth_success(ply_boot_client_t *client, char *format, ...) {
+  char *s;
   va_list argp;
 
   va_start(argp, format);
   vasprintf(&s, format, argp);
   va_end(argp);
 
-  if (got_usplash) {
-    asprintf(&s1, "SUCCESS %s", s);
-
-    write_and_retry(fd, s1);
-    
-    free(s1);
+  if (got_plymouth) {
+    ply_boot_client_tell_daemon_to_display_message(client, s,
+                                                   plymouth_response,
+                                                   plymouth_response, NULL);
+    ply_event_loop_process_pending_events(ply_event_loop);
   } else if (verbose)
     printf("%s\n", s);
 
   free(s);
 }
 
-void usplash_progress(int fd, int progress) {
+void plymouth_progress(ply_boot_client_t *client, int progress) {
   static int prevprogress = -1;
   char *s;
 
@@ -184,11 +198,11 @@ void usplash_progress(int fd, int progress) {
     return;
   prevprogress = progress;
 
-  if (got_usplash) {
-    asprintf(&s, "PROGRESS %d", progress);
-
-    write_and_retry(fd, s);
-
+  if (got_plymouth) {
+    asprintf(&s, "md5check:verifying:%d", progress);
+    ply_boot_client_update_daemon(client, s, plymouth_response,
+                                  plymouth_response, NULL);
+    ply_event_loop_process_pending_events(ply_event_loop);
     free(s);
   } else {
     printf("%d%%...", progress);
@@ -210,7 +224,7 @@ int set_nocanonical_tty(int fd) {
 
 int main(int argc, char **argv) {
   
-  int pipe_fd, check_fd;
+  int check_fd;
   int failed = 0;
   
   FILE *md5_file;
@@ -219,6 +233,7 @@ int main(int argc, char **argv) {
   char hex_output[16*2 + 1];
   char *checksum, *checkfile;
   ssize_t tsize, csize;
+  ply_boot_client_t *client = NULL;
 
   tsize = 0;
   csize = 0;
@@ -236,18 +251,23 @@ int main(int argc, char **argv) {
   
   parse_cmdline();
 
-  pipe_fd = open(USPLASH_FIFO, O_WRONLY|O_NONBLOCK);
-  
-  if (pipe_fd == -1) {
-    /* Fall back to text output */
-    perror("Opening pipe");
-    got_usplash = 0;
-  } else
-    got_usplash = 1;
-  
+  client = ply_boot_client_new();
+  if (client)
+    ply_event_loop = ply_event_loop_new();
+  if (ply_event_loop)
+    ply_boot_client_attach_to_event_loop(client, ply_event_loop);
 
-  usplash_progress(pipe_fd, 0);
-  usplash_urgent(pipe_fd, "Checking integrity, this may take some time");
+  if (!client || !ply_event_loop || !ply_boot_client_connect(client, plymouth_disconnected, NULL))
+  {
+    /* Fall back to text output */
+    perror("Connecting to plymouth");
+    got_plymouth = 0;
+  } else
+    got_plymouth = 1;
+
+
+  plymouth_progress(client, 0);
+  plymouth_urgent(client, "Checking integrity, this may take some time");
   md5_file = fopen(argv[2], "r");
   if (!md5_file) {
           perror("fopen md5_file");
@@ -272,12 +292,11 @@ int main(int argc, char **argv) {
     
     md5_init(&state);
     
-    usplash_text(pipe_fd, "Checking %s", checkfile);
+    plymouth_text(client, "Checking %s", checkfile);
     
     check_fd = open(checkfile, O_RDONLY);
     if (check_fd < 0) {
-      usplash_timeout(pipe_fd, 300);
-      usplash_failure(pipe_fd, "%s", strerror(errno));
+      plymouth_failure(client, "%s: %s", checkfile, strerror(errno));
       sleep(10);
     }
     
@@ -285,7 +304,7 @@ int main(int argc, char **argv) {
 
     while (rsize > 0) {
       csize += rsize;
-      usplash_progress(pipe_fd, 100*((long double)csize)/tsize);
+      plymouth_progress(client, 100*((long double)csize)/tsize);
 
       md5_append(&state, (const md5_byte_t *)buf, rsize);
       rsize = read(check_fd, buf, sizeof(buf));
@@ -298,9 +317,9 @@ int main(int argc, char **argv) {
       sprintf(hex_output + i * 2, "%02x", digest[i]);
     
     if (strncmp(hex_output, checksum, strlen(hex_output)) == 0) {
-      usplash_success(pipe_fd, "OK");
+      plymouth_success(client, "%s: OK", checkfile);
     } else {
-      usplash_failure(pipe_fd, "mismatch");
+      plymouth_failure(client, "%s: mismatch", checkfile);
       failed++;
     }
     free(checksum);
@@ -308,14 +327,13 @@ int main(int argc, char **argv) {
   }
   fclose(md5_file);
   if (failed) {
-    usplash_urgent(pipe_fd, "Check finished: errors found in %d files!", failed);
+    plymouth_urgent(client, "Check finished: errors found in %d files!", failed);
   } else {
-    usplash_urgent(pipe_fd, "Check finished: no errors found");
+    plymouth_urgent(client, "Check finished: no errors found");
   }
-  usplash_urgent(pipe_fd, "Press any key to reboot your system");
-  usplash_timeout(pipe_fd, 86400);
-  set_nocanonical_tty(0);
-  getchar();
+
+  plymouth_prompt(client, "Press any key to reboot your system");
+
   reboot(LINUX_REBOOT_CMD_RESTART);
   return 0;
   

@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Disabling gdm guest session functionality..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -18,8 +16,10 @@ prereqs)
        ;;
 esac
 
+. /scripts/casper-functions
+
 log_begin_msg "$DESCRIPTION"
 
-chroot /root dpkg -P gdm-guest-session || true
+chroot /root rm -rf /usr/share/gdm/guest-session
 
 log_end_msg

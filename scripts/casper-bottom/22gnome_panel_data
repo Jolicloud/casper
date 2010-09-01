@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Configuring gnome-panel-data..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -18,13 +16,9 @@ prereqs)
        ;;
 esac
 
-log_begin_msg "$DESCRIPTION"
+. /scripts/casper-functions
 
-if [ -x /root/usr/sbin/laptop-detect ]; then
-	if chroot /root laptop-detect; then
-	    casper-reconfigure /root gnome-panel-data
-	fi
-fi
+log_begin_msg "$DESCRIPTION"
 
 panel_version=$(chroot /root /usr/bin/dpkg-query -W --showformat='${Version}' gnome-panel-data 2>/dev/null) || panel_version=""
 if [ -n "$panel_version" ]; then
