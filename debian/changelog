@@ -1,3 +1,9 @@
+casper (1.236jolicloud1) robby; urgency=low
+
+  * Imported Debian version 1.236
+
+ -- Benjamin Ryzman <benjamin@jolicloud.org>  Wed, 01 Sep 2010 11:35:27 +0200
+
 casper (1.236) lucid; urgency=low
 
   * Check for LTS in the release name (LP: #558488).
