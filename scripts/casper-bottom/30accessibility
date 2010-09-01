@@ -4,8 +4,6 @@
 PREREQ=""
 DESCRIPTION="Configuring accessibility options..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -18,6 +16,8 @@ prereqs)
        exit 0
        ;;
 esac
+
+. /scripts/casper-functions
 
 log_begin_msg "$DESCRIPTION"
 
@@ -44,6 +44,7 @@ remove_applet()
 	local line_no prior_line next_line
 
 	line_no=$(grep -n "<string>$1</string>" /root/usr/share/gconf/defaults/05_panel-default-setup.entries | cut -f 1 -d :)
+	[ "$line_no" ] || return
 	prior_line=$((line_no-1))
 	next_line=$((line_no+1))
 	sed -i -n "${prior_line},${next_line}!p" /root/usr/share/gconf/defaults/05_panel-default-setup.entries
@@ -96,14 +97,8 @@ for x in $(cat /proc/cmdline); do
                         gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
                         gct -s -t bool /desktop/gnome/applications/at/visual/startup true
                         gct -s -t string /desktop/gnome/applications/at/visual/exec orca
+                        gct -s -t string /apps/empathy/conversation/theme classic                        
                         remove_applet fast_user_switch
-			if [ -x /root/usr/bin/pulse-session ]; then
-				touch /root/home/$USERNAME/.pulse_a11y_nostart
-				chroot /root chown $USERNAME.$USERNAME /home/$USERNAME/.pulse_a11y_nostart
-				mkdir -p /root/home/$USERNAME/.pulse
-				echo "autospawn = no" > /root/home/$USERNAME/.pulse/client.conf
-				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.pulse
-			fi
                         sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /root/etc/sudoers
 			if [ -x /root/usr/bin/orca ]; then
 				mkdir -p /root/home/$USERNAME/.orca
@@ -124,15 +119,9 @@ for x in $(cat /proc/cmdline); do
 			fi
                         gct -s -t bool /apps/gksu/disable-grab true
                         gct -s -t string /desktop/gnome/applications/window_manager/default /usr/bin/metacity
+                        gct -s -t string /apps/empathy/conversation/theme classic                        
                         remove_applet fast_user_switch
                         sed -i -e 's/# Host alias specification/Defaults\tenv_keep = "ORBIT_SOCKETDIR XDG_SESSION_COOKIE GTK_MODULES"\n\n# Host alias specification/g' /root/etc/sudoers
-			if [ -x /root/usr/bin/pulse-session ]; then
-				touch /root/home/$USERNAME/.pulse_a11y_nostart
-				chroot /root chown $USERNAME.$USERNAME /home/$USERNAME/.pulse_a11y_nostart
-				mkdir -p /root/home/$USERNAME/.pulse
-				echo "autospawn = no" > /root/home/$USERNAME/.pulse/client.conf
-				chroot /root chown -R $USERNAME.$USERNAME /home/$USERNAME/.pulse
-			fi
                         ;;
                         # Minor Motor Difficulties
                         access=m1)

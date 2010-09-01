@@ -5,6 +5,7 @@
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin
 
 mountpoint=/cdrom
+LIVE_MEDIA_PATH=casper
 
 root_persistence="casper-rw"
 home_persistence="home-rw"
@@ -17,6 +18,7 @@ HOST=live
 BUILD_SYSTEM=Custom
 
 mkdir -p $mountpoint
+tried=/tmp/tried
 
 [ -f /etc/casper.conf ] && . /etc/casper.conf
 export USERNAME USERFULLNAME HOST BUILD_SYSTEM
@@ -46,6 +48,14 @@ parse_cmdline() {
                 export STATICIP ;;
             ignore_uuid)
                 IGNORE_UUID="Yes" ;;
+            live-media-path=*)
+                LIVE_MEDIA_PATH="${x#live-media-path=}"
+                export LIVE_MEDIA_PATH
+                echo "export LIVE_MEDIA_PATH=\"$LIVE_MEDIA_PATH\"" >> /etc/casper.conf ;;
+            toram)
+                export TORAM="Yes" ;;
+            todisk=*)
+                export TODISK="${x#todisk=}" ;;
         esac
     done
     if [ "${UNIONFS}" = "" ]; then
@@ -55,10 +65,10 @@ parse_cmdline() {
 
 is_casper_path() {
     path=$1
-    if [ -d "$path/casper" ]; then
-        if [ "$(echo $path/casper/*.squashfs)" != "$path/casper/*.squashfs" ] ||
-            [ "$(echo $path/casper/*.ext2)" != "$path/casper/*.ext2" ] ||
-            [ "$(echo $path/casper/*.dir)" != "$path/casper/*.dir" ]; then
+    if [ -d "$path/$LIVE_MEDIA_PATH" ]; then
+        if [ "$(echo $path/$LIVE_MEDIA_PATH/*.squashfs)" != "$path/$LIVE_MEDIA_PATH/*.squashfs" ] ||
+            [ "$(echo $path/$LIVE_MEDIA_PATH/*.ext2)" != "$path/$LIVE_MEDIA_PATH/*.ext2" ] ||
+            [ "$(echo $path/$LIVE_MEDIA_PATH/*.dir)" != "$path/$LIVE_MEDIA_PATH/*.dir" ]; then
             return 0
         fi
     fi
@@ -108,10 +118,10 @@ match_files_in_dir() {
 mount_images_in_directory() {
     directory="$1"
     rootmnt="$2"
-    if match_files_in_dir "$directory/casper/*.squashfs" ||
-        match_files_in_dir "$directory/casper/*.ext2" ||
-        match_files_in_dir "$directory/casper/*.dir"; then
-        setup_unionfs "$directory/casper" "$rootmnt"
+    if match_files_in_dir "$directory/$LIVE_MEDIA_PATH/*.squashfs" ||
+        match_files_in_dir "$directory/$LIVE_MEDIA_PATH/*.ext2" ||
+        match_files_in_dir "$directory/$LIVE_MEDIA_PATH/*.dir"; then
+        setup_unionfs "$directory/$LIVE_MEDIA_PATH" "$rootmnt"
     else
         :
     fi
@@ -119,7 +129,10 @@ mount_images_in_directory() {
 
 is_nice_device() {
     sysfs_path="${1#/sys}"
-    if /lib/udev/path_id "${sysfs_path}" | grep -E -q "ID_PATH=(usb|pci-[^-]*-(ide|scsi|usb)|platform-mmc)"; then
+    if /lib/udev/path_id "${sysfs_path}" | egrep -q "ID_PATH=(usb|pci-[^-]*-(ide|scsi|usb)|platform-orion-ehci|platform-mmc|platform-mxsdhci)"; then
+        return 0
+    fi
+    if echo ${sysfs_path} | grep -q "^/block/dm-"; then
         return 0
     fi
     return 1
@@ -134,7 +147,7 @@ copy_live_to() {
 
     if [ "${copytodev}" = "ram" ]; then
         # copying to ram:
-        freespace=$( expr $(awk '/MemFree/{print $2}' /proc/meminfo) + $( cat /proc/meminfo | grep Cached | head -n 1 | awk '/Cached/{print $2}' - ) )
+        freespace=$(awk '/^MemFree:/{f=$2} /^Cached:/{c=$2} END{print f+c}' /proc/meminfo)
         mount_options="-o size=${size}k"
         free_string="memory"
         fstype="tmpfs"
@@ -160,7 +173,10 @@ copy_live_to() {
     mkdir "${copyto}"
     echo "mount -t ${fstype} ${mount_options} ${dev} ${copyto}"
     mount -t "${fstype}" ${mount_options} "${dev}" "${copyto}"
-    cp -a ${copyfrom}/* ${copyto} # "cp -a" from busybox also copies hidden files
+    cp -a ${copyfrom}/* ${copyto}
+    if [ -e ${copyfrom}/.disk ]; then
+        cp -a ${copyfrom}/.disk ${copyto}
+    fi
     umount ${copyfrom}
     mount -r -o move ${copyto} ${copyfrom}
     rmdir ${copyto}
@@ -246,7 +262,7 @@ do_snap_copy ()
             todev=$(cat /proc/mounts | grep -s " $(base_path ${todir}) " | awk '{print $1}' )
             freespace=$(df -k  | grep -s ${todev} | awk '{print $4}')
         else
-            freespace=$( expr $(awk '/MemFree/{print $2}' /proc/meminfo) + $( cat /proc/meminfo | grep Cached | head -n 1 | awk '/Cached/{print $2}' - ))
+            freespace=$(awk '/^MemFree:/{f=$2} /^Cached:/{c=$2} END{print f+c}' /proc/meminfo)
         fi
 
         tomount="/mnt/tmpsnap"
@@ -298,7 +314,16 @@ try_snap ()
             fi
         else
             # cpio.gz snapshot
-            if ! (cd "${snap_mount}" && zcat "${snapback}/${snapfile}" | cpio -i -u -d 2>/dev/null) ; then
+            # Unfortunately klibc's cpio is incompatible with the rest of
+            # the world; everything else requires -u -d, while klibc doesn't
+            # implement them. Try to detect whether it's in use.
+            cpiopath="$(which cpio)" || true
+            if [ "$cpiopath" ] && grep -aq /lib/klibc "$cpiopath"; then
+                cpioargs=
+            else
+                cpioargs='-u -d'
+            fi
+            if ! (cd "${snap_mount}" && zcat "${snapback}/${snapfile}" | cpio -i $cpioargs 2>/dev/null) ; then
                 log_warning_msg "Impossible to include the ${snapfile} Snapshot"
                 return 1
             fi
@@ -306,7 +331,7 @@ try_snap ()
         umount "${snapback}"
     else
         dev=$(find_cow_device "${snap_label}")
-        if [ -b ${dev} ]; then
+        if [ -b "${dev}" ]; then
             if echo "${dev}" | grep -qs loop; then
                 # strange things happens, user confused?
                 snaploop=$( losetup ${dev} | awk '{print $3}' | tr -d '()' )
@@ -329,7 +354,7 @@ try_snap ()
             return 1
         fi
     fi
-    echo "export ${snap_type}SNAP="${snap_mount}":${snapdev}:${snapfile}" >> /etc/casper.conf # for resync on reboot/halt
+    echo "export ${snap_type}SNAP="/cow${snap_mount#$rootmnt}":${snapdev}:${snapfile}" >> /etc/casper.conf # for resync on reboot/halt
     return 0
 }
 
@@ -337,7 +362,15 @@ setup_unionfs() {
     image_directory="$1"
     rootmnt="$2"
 
-    modprobe "${MP_QUIET}" -b ${UNIONFS}
+    case ${UNIONFS} in
+        aufs|unionfs)
+            modprobe "${MP_QUIET}" -b ${UNIONFS} || true
+            if ! cut -f2 /proc/filesystems | grep -q "^${UNIONFS}\$" && \
+               [ -x /bin/unionfs-fuse ]; then
+                UNIONFS="unionfs-fuse"
+            fi
+            ;;
+    esac
 
     # run-init can't deal with images in a subdir, but we're going to
     # move all of these away before it runs anyway.  No, we're not,
@@ -349,10 +382,10 @@ setup_unionfs() {
     # Let's just mount the read-only file systems first
     rofsstring=""
     rofslist=""
-    if [ "${NETBOOT}" = "nfs" ] ; then
-        roopt="nfsro" # go aroung a bug in nfs-unionfs locking
-    elif [ "${UNIONFS}" = "aufs" ]; then
+    if [ "${UNIONFS}" = "aufs" ]; then
         roopt="rr"
+    elif [ "${UNIONFS}" = "unionfs-fuse" ]; then
+        roopt="RO"
     else
         roopt="ro"
     fi
@@ -397,7 +430,16 @@ setup_unionfs() {
 
     mount -t ${cow_fstype} -o ${cow_mountopt} ${cowdevice} /cow || panic "Can not mount $cowdevice on /cow"
 
-    mount -t ${UNIONFS} -o noatime,dirs=/cow=rw:$rofsstring ${UNIONFS} "$rootmnt" || panic "${UNIONFS} mount failed"
+    case ${UNIONFS} in
+        unionfs-fuse)
+            (ulimit -n 16384; unionfs-fuse -o cow -o noinitgroups -o default_permissions -o allow_other -o use_ino -o suid /cow=RW:$rofsstring "$rootmnt" || panic "${UNIONFS} mount failed")
+            mkdir -p /dev/.initramfs/varrun
+            pidof unionfs-fuse >> /dev/.initramfs/varrun/sendsigs.omit || true
+            ;;
+        *)
+            mount -t ${UNIONFS} -o noatime,dirs=/cow=rw:$rofsstring ${UNIONFS} "$rootmnt" || panic "${UNIONFS} mount failed"
+            ;;
+    esac
 
     # Adding other custom mounts
     if [ -n "${PERSISTENT}" ]; then
@@ -417,11 +459,16 @@ setup_unionfs() {
 
     if [ -n "${SHOWMOUNTS}" ]; then
         for d in ${rofslist}; do
-            mkdir -p "${rootmnt}/casper/${d##*/}"
+            mkdir -p "${rootmnt}/${LIVE_MEDIA_PATH}/${d##*/}"
             case d in
-                *.dir) # do nothing # mount -o bind "${d}" "${rootmnt}/casper/${d##*/}"
+                *.dir) # do nothing # mount -o bind "${d}" "${rootmnt}/${LIVE_MEDIA_PATH}/${d##*/}"
                     ;;
-                *) mount -o move "${d}" "${rootmnt}/casper/${d##*/}"
+                *)
+                    if [ "${UNIONFS}" = unionfs-fuse ]; then
+                        mount -o bind "${d}" "${rootmnt}/${LIVE_MEDIA_PATH}/${d##*/}"
+                    else
+                        mount -o move "${d}" "${rootmnt}/${LIVE_MEDIA_PATH}/${d##*/}"
+                    fi
                     ;;
             esac
         done
@@ -433,7 +480,11 @@ setup_unionfs() {
     # move the first mount; no head in busybox-initramfs
     for d in $(mount -t squashfs | cut -d\  -f 3); do
         mkdir -p "${rootmnt}/rofs"
-        mount -o move "${d}" "${rootmnt}/rofs"
+        if [ "${UNIONFS}" = unionfs-fuse ]; then
+            mount -o bind "${d}" "${rootmnt}/rofs"
+        else
+            mount -o move "${d}" "${rootmnt}/rofs"
+        fi
         break
     done
 }
@@ -456,6 +507,7 @@ check_dev ()
             umount $mountpoint
         fi
     fi
+    [ -e "$devname" ] || continue
 
     if [ -n "${LIVEMEDIA_OFFSET}" ]; then
         loopdevname=$(setup_loop "${devname}" "loop" "/sys/block/loop*" "${LIVEMEDIA_OFFSET}")
@@ -464,7 +516,10 @@ check_dev ()
 
     fstype=$(get_fstype "${devname}")
     if is_supported_fs ${fstype}; then
+        devuid=$(blkid -o value -s UUID "$devname")
+        [ -n "$devuid" ] && grep -qs "\<$devuid\>" $tried && continue
         mount -t ${fstype} -o ro,noatime "${devname}" $mountpoint || continue
+        [ -n "$devuid" ] && echo "$devuid" >> $tried
         if is_casper_path $mountpoint && \
            ([ "$skip_uuid_check" ] || matches_uuid $mountpoint); then
             echo $mountpoint
@@ -495,8 +550,9 @@ find_livefs() {
         fi
     fi
     # or do the scan of block devices
-    for sysblock in $(echo /sys/block/* | tr ' ' '\n' | grep -vE "/(loop|ram|fd)"); do
+    for sysblock in $(echo /sys/block/* | tr ' ' '\n' | egrep -v "/(loop|ram|fd)"); do
         devname=$(sys2dev "${sysblock}")
+        [ -e "$devname" ] || continue
         fstype=$(get_fstype "${devname}")
         if /lib/udev/cdrom_id ${devname} > /dev/null; then
             if check_dev "null" "${devname}" ; then
@@ -529,15 +585,24 @@ set_usplash_timeout() {
     fi
 }
 
+start_usplash_pulse() {
+    if [ -x /sbin/usplash_write ]; then
+        /sbin/usplash_write "PULSELOGO"
+    fi
+}
+
 mountroot() {
     exec 6>&1
     exec 7>&2
     exec > casper.log
     exec 2>&1
+    tail -f casper.log >&7 &
+    tailpid="$!"
 
     parse_cmdline
 
     set_usplash_timeout
+    start_usplash_pulse
     [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/casper-premount"
     run_scripts /scripts/casper-premount
     [ "$quiet" != "y" ] && log_end_msg
@@ -585,13 +650,69 @@ mountroot() {
 
     log_end_msg
 
+    # unionfs-fuse needs /dev to be bind-mounted for the duration of
+    # casper-bottom; udev's init script will take care of things after that
+    if [ "${UNIONFS}" = unionfs-fuse ]; then
+        mount -n -o bind /dev "${rootmnt}/dev"
+    fi
+
+    # Open up two fifo's fd's for debconf-communicate to use. Speeds up
+    # the Casper process considerably.
+    log_begin_msg "Creating debconf-communicate fifo mechanism"
+    mkfifo /tmp/debconf-in.fifo
+    mkfifo /tmp/debconf-out.fifo
+
+    # Make the template database read-only, so that passthrough debconf
+    # instances can write to it directly; otherwise templates are only
+    # passed through when necessary.  Use temporary config databases as
+    # well; we'll copy their contents back at the end.
+    DEBCONF_TMPDIR="$(chroot /root mktemp -dt debconf.XXXXXX)"
+    cp -a /root/var/cache/debconf/config.dat "/root$DEBCONF_TMPDIR/"
+    cp -a /root/var/cache/debconf/passwords.dat "/root$DEBCONF_TMPDIR/"
+    sed "s,^Filename: /var/cache/debconf/\(config\|passwords\).dat$,Filename: $DEBCONF_TMPDIR/\1.dat,; /^Name: templatedb/a\
+Readonly: true" /root/etc/debconf.conf >"/root$DEBCONF_TMPDIR/debconf.conf"
+
+    DEBCONF_SYSTEMRC="$DEBCONF_TMPDIR/debconf.conf" chroot /root debconf-communicate -fnoninteractive casper > /tmp/debconf-out.fifo < /tmp/debconf-in.fifo &
+
+    if [ ! -p /tmp/debconf-in.fifo ] || [ ! -p /tmp/debconf-out.fifo ]; then
+        log_warning_msg "failed to setup debconf-communicate channel"
+    fi
+    log_end_msg
+
+    # Order matters!
+    # These file descriptors must stay open until we're finished with
+    # debconf-communicate.
+    exec 4</tmp/debconf-out.fifo 3>/tmp/debconf-in.fifo
+
     maybe_break casper-bottom
     [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/casper-bottom"
 
     run_scripts /scripts/casper-bottom
     [ "$quiet" != "y" ] && log_end_msg
 
+    if [ "${UNIONFS}" = unionfs-fuse ]; then
+        umount "${rootmnt}/dev"
+    fi
+
+    # Close the fd's associated with debconf-communicate.
+    exec 3>&- 4<&-
+    rm -f /tmp/debconf-in.fifo
+    rm -f /tmp/debconf-out.fifo
+
+    # Copy config database changes back to the master files.
+    chroot /root debconf-copydb tmpdb config \
+	--config=Name:tmpdb --config=Driver:File \
+	--config="Filename:$DEBCONF_TMPDIR/config.dat"
+    chroot /root debconf-copydb tmpdb passwords \
+	--config=Name:tmpdb --config=Driver:File \
+	--config="Filename:$DEBCONF_TMPDIR/passwords.dat"
+    rm -rf "$DEBCONF_TMPDIR"
+
     exec 1>&6 6>&-
     exec 2>&7 7>&-
+    kill "$tailpid"
     cp casper.log "${rootmnt}/var/log/"
+    if [ -f /etc/casper.conf ]; then
+        cp /etc/casper.conf "${rootmnt}/etc/"
+    fi
 }

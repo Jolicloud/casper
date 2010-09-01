@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Regenerating SSL certificate..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -17,6 +15,9 @@ prereqs)
        exit 0
        ;;
 esac
+
+. /scripts/casper-functions
+load_confmodule
 
 log_begin_msg "$DESCRIPTION"
 

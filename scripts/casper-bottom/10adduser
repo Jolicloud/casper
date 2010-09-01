@@ -3,8 +3,6 @@
 PREREQ=""
 DESCRIPTION="Adding live session user..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -18,27 +16,26 @@ prereqs)
        ;;
 esac
 
+. /scripts/casper-functions
+load_confmodule
+
 log_begin_msg "$DESCRIPTION"
 
 # U6aMy0wojraho is just a blank password
-chroot /root debconf-communicate -fnoninteractive casper > /dev/null <<EOF
-set passwd/root-password-crypted *
-set passwd/user-password-crypted U6aMy0wojraho
-set passwd/user-fullname $USERFULLNAME 
-set passwd/username $USERNAME
-set passwd/user-uid 999
-EOF
+db_set passwd/root-password-crypted '*'
+db_set passwd/user-password-crypted U6aMy0wojraho
+db_set passwd/user-fullname "$USERFULLNAME"
+db_set passwd/username "$USERNAME"
+db_set passwd/user-uid 999
 
 chroot /root /usr/lib/user-setup/user-setup-apply > /dev/null
 
 # Clear out debconf database again to avoid confusing ubiquity later.
-chroot /root debconf-communicate -fnoninteractive casper > /dev/null <<EOF
-set passwd/root-password-crypted
-set passwd/user-password-crypted
-set passwd/user-fullname
-set passwd/username
-set passwd/user-uid
-EOF
+db_set passwd/root-password-crypted
+db_set passwd/user-password-crypted
+db_set passwd/user-fullname
+db_set passwd/username
+db_set passwd/user-uid
 
 if [ -f /root/etc/sudoers ]; then
     if [ "${BUILD_SYSTEM}" = "Ubuntu" ]; then
@@ -55,8 +52,14 @@ fi
 # XXX - awful hack to stop xscreensaver locking the screen (#7150)
 echo 'RUNNING_UNDER_GDM="yes"' >> /root/etc/environment
 
-for file in /usr/share/applications/ubiquity-gtkui.desktop /usr/share/applications/kde/ubiquity-kdeui.desktop; do
+LTS="$(cut -d' ' -f3 /root/cdrom/.disk/info 2>/dev/null)" || LTS=
+RELEASE="$(cut -d' ' -f1-2 /root/cdrom/.disk/info 2>/dev/null)" || RELEASE=
+if [ "$LTS" = "LTS" ] && [ -n "$RELEASE" ]; then
+	RELEASE="$RELEASE LTS"
+fi
+for file in /usr/share/applications/ubiquity-gtkui.desktop /usr/share/applications/kde4/ubiquity-kdeui.desktop; do
     if [ -f "/root/$file" ]; then
+        sed -i "s/RELEASE/$RELEASE/" "/root$file"
         chroot /root install -d -o $USERNAME -g $USERNAME /home/$USERNAME/Desktop
         chroot /root install -D -o $USERNAME -g $USERNAME $file /home/$USERNAME/Desktop/$(basename "$file")
         break
@@ -92,24 +95,6 @@ fi
 if [ -f "/root/usr/lib/hildon-desktop/kourou.py" ]; then
   if [ -f "/root/etc/xdg/menus/home.menu" ]; then
     sed -i '/<\/Include>/i\		<Filename>ubiquity-gtkui.desktop</Filename>' "/root/etc/xdg/menus/home.menu"
-  fi
-fi
-
-#Ubuntu Netbook Remix needs Categories=Favorites for ubiquity
-if grep -q "Categories=Favorites;" "/root/usr/share/applications/firefox-fav.desktop"; then
-  if [ -f "/root/usr/share/applications/ubiquity-gtkui.desktop" ]; then
-    sed -i '/^Categories/s/$/Favorites;/' "/root/usr/share/applications/ubiquity-gtkui.desktop"
-  fi
-fi
-
-#Mythbuntu
-if [ -d "/root/usr/share/mythbuntu" ]; then
-  if [ -f "/root/usr/share/applications/mythbuntu-live-frontend.desktop" ]; then
-    chroot /root install -d -o $USERNAME -g $USERNAME /home/$USERNAME/Desktop
-    chroot /root install -D -o $USERNAME -g $USERNAME /usr/share/applications/mythbuntu-live-frontend.desktop /home/$USERNAME/Desktop/mythbuntu-live-frontend.desktop
-  fi
-  if [ -f "/root/etc/xdg/mythbuntu/xfce4/mcs_settings/desktop.xml" ]; then
-    sed -i "s/<\/mcs/\t<option\ name=\"showremovable\"\ type=\"int\"\ value=\"0\"\/>\n<\/mcs/" /root/etc/xdg/mythbuntu/xfce4/mcs_settings/desktop.xml 
   fi
 fi
 

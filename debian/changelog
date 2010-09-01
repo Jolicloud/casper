@@ -1,3 +1,627 @@
+casper (1.236) lucid; urgency=low
+
+  * Check for LTS in the release name (LP: #558488).
+
+ -- Evan Dandrea <evand@ubuntu.com>  Wed, 21 Apr 2010 11:12:32 +0100
+
+casper (1.235) lucid; urgency=low
+
+  * Unbreak early command from previous commit.
+
+ -- Mario Limonciello <Mario_Limonciello@Dell.com>  Thu, 15 Apr 2010 02:54:15 -0500
+
+casper (1.234) lucid; urgency=low
+
+  * Only bring the network up while running preseed/early_command if
+    preseed/allow-network=true.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Wed, 14 Apr 2010 15:56:40 +0100
+
+casper (1.233) lucid; urgency=low
+
+  * Bring the network up while running preseed/early_command.
+  * Fix use of debconf passthrough frontend; DEBCONF_READFD and
+    DEBCONF_WRITEFD were backwards, and DEBIAN_HAS_FRONTEND and
+    DEBCONF_REDIR needed to be unset or else confmodule scripts would end up
+    trying to talk to closed file descriptors.
+  * Run debconf-communicate with a read-only template database and separate
+    config databases, and copy any changed values back to the master
+    databases at the end.  This allows us to use the noninteractive frontend
+    rather than passthrough when running apt-get in preseed/early_command or
+    dpkg to install driver updates, thereby ensuring that the template
+    database is properly initialised (LP: #557011).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 12 Apr 2010 23:41:09 +0100
+
+casper (1.232) lucid; urgency=low
+
+  * bump compcache size to 50% on live images for machines with less than
+    512MiB. This makes sure we don't hit OOM errors on systems with only
+    256MiB of RAM.
+
+ -- Oliver Grawert <ogra@ubuntu.com>  Mon, 12 Apr 2010 08:10:06 +0200
+
+casper (1.231) lucid; urgency=low
+
+  [ Jonathan Riddell ]
+  * Remove 37kubuntu_netbook_installer_link, now done with a patch in
+    kdebase-workspace
+
+  [ Colin Watson ]
+  * If copying live media to RAM or disk, explicitly copy .disk, since *
+    won't expand to include it (LP: #526305).
+  * Cache /bin/plymouth and /sbin/usplash_write before ejecting the CD, in
+    the hope that that helps with I/O errors on reboot (see LP #539027).
+
+  [ Luke Yelavich ]
+  * ubiquity-hooks/30accessibility: Copy the orca settings directory to the
+    gdm home directory, to allow for preferred orca settings to be used in
+    gdm (LP: #551515).
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Fri, 09 Apr 2010 14:00:51 +1000
+
+casper (1.230) lucid; urgency=low
+
+  * Don't save the hardware clock on live CD reboot; we used to do this in
+    the sysvinit world, but it regressed when we switched to Upstart
+    (thanks, Norm Pierce; LP: #436535).
+  * When running update-initramfs on writable media, update initrd.lz rather
+    than initrd.gz if it's present, and make the update process a bit safer
+    while we're there (LP: #489736).
+  * Handle toram and todisk=DEVICE options on command line (LP: #526305).
+  * Policy version 3.8.4: no changes required.
+  * Convert to source format 3.0 (native).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Tue, 30 Mar 2010 11:41:24 +0100
+
+casper (1.229) lucid; urgency=low
+
+  [ Jonathan Riddell ]
+  * Update scripts/casper-bottom/34disable_kde_services for lucid
+
+  [ Evan Dandrea ]
+  * Don't let apt try to auto-detect the CD-ROM device using udev.  We
+    already know what it is, and using udev to find it again wont work
+    for USB disks.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Tue, 23 Mar 2010 11:42:00 +0000
+
+casper (1.228) lucid; urgency=low
+
+  * Update for the new libplymouth2.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Fri, 12 Mar 2010 18:37:02 -0800
+
+casper (1.227) lucid; urgency=low
+
+  * casper-md5check: port from usplash to plymouth.  LP: #500198
+  * fix up our reliance on usplash, /dev/console elsewhere.  LP: #506418.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Fri, 12 Mar 2010 01:12:28 -0800
+
+casper (1.226) lucid; urgency=low
+
+  [ Colin Watson ]
+  * Stop using removed nfsro option for NFS/unionfs (thanks, Bernhard
+    Seibold; LP: #460781).
+
+  [ Jonathan Riddell ]
+  * Remove scripts/casper-bottom/48enable_kubuntu_netbook and ubiquity-
+    hooks/48enable_kubuntu_netbook now enabled in kubuntu-netbook-
+    default-settings
+
+ -- Jonathan Riddell <jriddell@ubuntu.com>  Wed, 10 Mar 2010 22:23:04 +0000
+
+casper (1.225) lucid; urgency=low
+
+  * Add ubiquity-hooks/49kubuntu_gnome_icon_cache to recreate the Gnome
+    icon cache on Kubuntu CDs, removed by livecd-rootfs
+
+ -- Jonathan Riddell <jriddell@ubuntu.com>  Mon, 08 Mar 2010 11:47:01 +0000
+
+casper (1.224) lucid; urgency=low
+
+  * Remove ubiquity-hooks/35copy_wallpaper_cache as now implement it in
+    ubiquity itself (LP: #530024)
+
+ -- Didier Roche <didrocks@ubuntu.com>  Mon, 01 Mar 2010 19:41:45 +0100
+
+casper (1.223) lucid; urgency=low
+
+  * Bind-mount /dev, /proc, and /sys into /root while running apt-cdrom.
+  * Copy /lib/udev/rules.d/60-cdrom_id.rules into the initramfs to go with
+    /lib/udev/cdrom_id, so that apt-cdrom will be able to find ID_CDROM=1
+    entries when we run it.  This should stop update-notifier from
+    repeatedly popping up during the live session.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Tue, 23 Feb 2010 01:35:30 +0000
+
+casper (1.222) lucid; urgency=low
+
+  * scripts/casper-bottom/47une_ubiquity:
+    - get back ubiquity favorite icon in UNE live (LP: #524381)
+    - rename the script from 47unr_ubiquity to 47une_ubiquity as well
+      as "UNR" mention
+
+ -- Didier Roche <didrocks@ubuntu.com>  Mon, 22 Feb 2010 14:01:25 +0100
+
+casper (1.221) lucid; urgency=low
+
+  * Remove the rest of the mythbuntu delta from 10adduser.  It will be
+    maintained in the mythbuntu-live-autostart package instead so that
+    users from ~mythbuntu-dev can administer it.
+
+ -- Mario Limonciello <superm1@ubuntu.com>  Sun, 21 Feb 2010 20:22:00 -0600
+
+casper (1.220) lucid; urgency=low
+
+  * scripts/casper: calculate memory without "head" utility, thanks to
+    Petar Bogdanovic (LP: #25496).
+
+ -- Kees Cook <kees@ubuntu.com>  Fri, 19 Feb 2010 14:04:18 -0800
+
+casper (1.219) lucid; urgency=low
+
+  [ Mario Limonciello ]
+  * Disable casper-reconfigure from 22gnome_panel_data.  It doesn't (appear) to
+    serve a functional purpose as the postinst does nothing different for laptops.
+
+  [ Didier Roche ]
+  * add 35copy_wallpaper_cache to copy the wallpaper cache created at boot time
+    to the main user's directory. First boot will take it into account in
+    ureadahead profiling
+
+ -- Didier Roche <didrocks@ubuntu.com>  Wed, 17 Feb 2010 19:14:53 +0100
+
+casper (1.218) lucid; urgency=low
+
+  * Allow dpkg and apt-get to be installed from within commands that operate
+    in the chroot via early_command or driver updates. (LP: #521218)
+
+ -- Mario Limonciello <Mario_Limonciello@Dell.com>  Tue, 16 Feb 2010 13:38:48 -0600
+
+casper (1.217) lucid; urgency=low
+
+  [ Luke Yelavich ]
+  * ubiquity-hooks/30accessibility: Enable accessible login for the blindness
+    and braile accessibility profiles.
+
+  [ Colin Watson ]
+  * Use egrep rather than 'grep -E' (LP: #512386).
+
+  [ Julien Lavergne ]
+  * 15autologin: Add support for LXDM autologin (LP: #511976).
+
+  [ Evan Dandrea ]
+  * Properly shut down debconf-communicate so that its database gets
+    written (LP: #518272).
+
+ -- Evan Dandrea <evand@ubuntu.com>  Thu, 11 Feb 2010 08:25:53 +0000
+
+casper (1.216) lucid; urgency=low
+
+  [ Luke Yelavich ]
+  * scripts/casper-bottom/30accessibility && ubiquity-hooks/30accessibility:
+    - Remove code to disable pulseaudio, as it is no longer needed, and
+      the supporting code in the pulseaudio package was removed a long time
+      ago.
+    - Set the default empathy theme to classic for blindness and braille
+      accessibility profiles.
+
+  [ Jamie Bennett ]
+  * Speed up work around debconf-communicate. Replace several calls to
+    debconf-communicate with one persistent invocation followed by 
+    confmodule calls.
+  * Disable guest account by rm'ing rather than waiting for dpkg to
+    remove it.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Wed, 03 Feb 2010 16:41:57 -0800
+
+casper (1.215) lucid; urgency=low
+
+  [ Mario Limonciello ]
+  * Support multiple preseed file/urlarguments on the kernel commandline
+    rather than just selecting the last one and going with that.
+  * debian/control: Set Vcs-Bzr.
+
+  [ Jonathan Riddell ]
+  * Add scripts/casper-bottom/48enable_kubuntu_netbook and ubiquity-
+    hooks/48enable_kubuntu_netbook to enable Plasma Netbook workspace
+    for Kubuntu Netbook Remix
+
+ -- Jonathan Riddell <jriddell@ubuntu.com>  Wed, 27 Jan 2010 13:55:42 +0000
+
+casper (1.214) lucid; urgency=low
+
+  * 15autologin: simplify the code with escape character evaluation
+    (LP: #505140)
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 12 Jan 2010 08:57:05 +0100
+
+casper (1.213) lucid; urgency=low
+
+  * printf does not evaluate escape characters in the argument string.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Mon, 11 Jan 2010 11:02:12 +0000
+
+casper (1.212) lucid; urgency=low
+
+  [ Martin Pitt ]
+  * debian/control: Add ${misc:Depends}.
+  * debian/control: Bump Standards-Version to 3.8.3 (no changes necessary).
+
+  [ Colin Watson ]
+  * 15autologin: Use printf rather than echo -e, since its behaviour is
+    portable across shells.
+
+  [ Evan Dandrea ]
+  * Remove scripts/casper-bottom/42disable_apparmor.  Apparmor
+    2.3.1+bzr1312-0ubuntu3 and ifupdown 0.6.8ubuntu26 now no-op when
+    they detect the live CD environment.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Fri, 08 Jan 2010 20:31:26 +0000
+
+casper (1.211) lucid; urgency=low
+
+  * Readd scripts/casper-bottom/15autologin changes: derivatives have
+    now a custom.conf file and still need autologin in live version.
+    Merge with my previous fix proposed for sponsoring one week ago:
+    use echo -e to enable \n interpretation (/bin/sh is busybox ash
+    which behavior differs from vanilla ash interpretor) (LP: #500786) 
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 05 Jan 2010 20:05:26 +0100
+
+casper (1.210) lucid; urgency=low
+
+  [ Scott James Remnant ]
+  * Dropped Vcs-Bzr headers, pushed to lp:ubuntu/casper
+  * conf-hooks.d/casper: Changed to FRAMEBUFFER=y
+
+  [ Colin Watson ]
+  * Source /scripts/casper-functions and /scripts/casper-helpers only after
+    processing 'prereqs' argument, to avoid lots of warnings with new
+    initramfs-tools.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Tue, 05 Jan 2010 16:54:54 +0000
+
+casper (1.209) lucid; urgency=low
+
+  * Revert the previous change to 15autologin and instead just make sure
+    custom.conf does not exist.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Mon, 04 Jan 2010 11:18:47 +0000
+
+casper (1.208) lucid; urgency=low
+
+  [ Martin Pitt ]
+  * scripts/casper-bottom/25configure_init: sreadahead is no more, disable
+    ureadahead instead.
+
+  [ Didier Roche ]
+  * scripts/casper-bottom/15autologin: Don't erase /etc/gdm/custom.conf but
+    only append autologin on casper startup if needed. This avoids removing
+    default session set in this file for ubuntu derivatives which use GDM.
+    The script also check if the modification is already there for
+    persistent usb keys. (LP: #498971)
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Mon, 21 Dec 2009 15:54:36 +0100
+
+casper (1.207) lucid; urgency=low
+
+  * Drop 46_disable_services.  It didn't need to be running on "all" systems
+    with casper installed.  Mythbuntu systems will pull this in via a package
+    that is administerable via ~mythbuntu-dev.
+
+ -- Mario Limonciello <superm1@ubuntu.com>  Tue, 24 Nov 2009 22:28:29 -0600
+
+casper (1.206) karmic; urgency=low
+
+  * Fix broken /cdrom writable test in 43disable_initramfs
+    (LP: #450259).
+
+ -- Evan Dandrea <evand@ubuntu.com>  Thu, 22 Oct 2009 11:49:15 +0100
+
+casper (1.205) karmic; urgency=low
+
+  * scripts/casper-bottom/25configure_init: Disable sreadahead on live CD
+    boot. Not only does it profile the live CD boot to no benefit, but it
+    also looks as if it may be responsible for breaking Wubi installs by
+    reading from partman's synchronisation FIFOs (LP: #439279).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Tue, 20 Oct 2009 17:32:02 +0100
+
+casper (1.204) karmic; urgency=low
+
+  * scripts/casper-bottom/30accessibility && ubiquity-hooks/30accessibility:
+    - .pulse_a11y_nostart -> pulse_a11y_nostart due to being in a system
+      directory, to completely match the change in pulseaudio, which I missed
+      earlier.
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 14 Oct 2009 08:29:07 +1100
+
+casper (1.203) karmic; urgency=low
+
+  * scripts/casper-bottom/30accessibility && ubiquity-hooks/30accessibility:
+    - Change .pulse_a11y_nostart location to /var/lib/pulseaudio, as per
+      the change in pulseaudio itself, to solve a race condition with volume
+      settings restore.
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Mon, 12 Oct 2009 08:31:51 +1100
+
+casper (1.202) karmic; urgency=low
+
+  * scripts/casper-bottom/46_disable_services:
+    - MythTV backend is now an upstart service, so rename it's conf file
+      in /etc/init, rather than using update-rc.d.
+
+ -- Mario Limonciello <superm1@ubuntu.com>  Sun, 11 Oct 2009 13:47:00 -0500
+
+casper (1.201) karmic; urgency=low
+
+  [ Colin Watson ]
+  * Don't prompt to eject the SD card on Babbage boards, since for now it's
+    reused as a quasi-boot-floppy (LP: #364273).
+
+  [ James Westby ]
+  * scripts/casper-bottom/44pk_allow_ubuntu: update to work for polkit-1
+    as well. Allow the live cd user to perform any action when at the
+    active console. (LP: #447141)
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Fri, 09 Oct 2009 16:06:53 +0100
+
+casper (1.200) karmic; urgency=low
+
+  * scripts/casper-bottom/20xconfig:
+    - Fix xforcevesa to generate a good failsafe xorg.conf (LP: #423969)
+
+ -- Mario Limonciello <superm1@ubuntu.com>  Thu, 08 Oct 2009 22:26:42 -0500
+
+casper (1.199) karmic; urgency=low
+
+  [ Tormod Volden ]
+  * Scan device-mapper (RAID) devices for live filesystem (LP: #385305).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Tue, 06 Oct 2009 23:39:57 +0100
+
+casper (1.198) karmic; urgency=low
+
+  * scripts/casper: Send PULSELOGO usplash command at startup. (LP: #438762)
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Fri, 02 Oct 2009 13:51:07 +0200
+
+casper (1.197) karmic; urgency=low
+
+  [ Colin Watson ]
+  * Fix tty device name construction to work with new upstart (LP: #438678).
+
+  [ Loïc Minier ]
+  * scripts/casper-bottom/22serialtty: pass -L to getty and set term to vt100.
+  * scripts/casper-bottom/22serialtty: set +x...
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Thu, 01 Oct 2009 23:27:45 +0100
+
+casper (1.196) karmic; urgency=low
+
+  * Extend our hack that arranges to run setupcon after usplash exits to
+    cover the new Upstartified usplash as well.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Tue, 29 Sep 2009 01:36:55 +0100
+
+casper (1.195) karmic; urgency=low
+
+  [ Oliver Grawert ]
+  * add support for serialtty= cmdline option for debugging purposes in live
+    sessions
+
+  [ Colin Watson ]
+  * Upstart moved /etc/event.d/ to /etc/init/; adjust shell provision on VTs
+    to match (LP: #434769).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 28 Sep 2009 10:52:32 +0100
+
+casper (1.194) karmic; urgency=low
+
+  * Fix 47unr_ubiquity shell code to make slightly more sense.
+  * Tell mkinitramfs that casper needs usplash (LP: #434980).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Thu, 24 Sep 2009 01:29:21 +0100
+
+casper (1.193) karmic; urgency=low
+
+  * Sync LSB headers in init script with desired behaviour: don't start
+    casper at boot, and stop after umountroot but before halt/reboot.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 14 Sep 2009 13:08:23 +0100
+
+casper (1.192) karmic; urgency=low
+
+  [ Colin Watson ]
+  * Upgrade to debhelper v7.
+
+  [ Jonathan Riddell ]
+  * Add 37kubuntu_netbook_installer_link to show ubiquity launcher
+
+ -- Jonathan Riddell <jriddell@ubuntu.com>  Sat, 12 Sep 2009 00:10:03 +0100
+
+casper (1.191) karmic; urgency=low
+
+  * Slightly re-work 47unr_ubiquity, so that ubiquity doesn't keep getting
+    added to the favourites if persistence is used. 
+
+ -- Steve Kowalik <stevenk@ubuntu.com>  Tue, 08 Sep 2009 20:35:00 +1000
+
+casper (1.190) karmic; urgency=low
+
+  [ Colin Watson ]
+  * Don't produce an invalid sed program when trying to remove an applet
+    which isn't in the panel (LP: #406188).
+
+  [ Tormod Volden ]
+  * do not remount filesystems that already have been probed when
+    searching for the livefs (LP: #424464)
+  * Fix quoting in try_snap (LP: #424742).
+  * Silence error messages for non-existent device nodes (LP: #425159).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 07 Sep 2009 13:10:53 +0100
+
+casper (1.189) karmic; urgency=low
+
+  * In 10adduser fix path to ubiquity-kde.desktop file
+
+ -- Jonathan Riddell <jriddell@ubuntu.com>  Wed, 02 Sep 2009 14:54:41 +0100
+
+casper (1.188) karmic; urgency=low
+
+  * Allow for platform-orion-ehci in ID_PATH to qualify as a "nice_device"
+    i.e. one which can host a livefs.  This is the name of the USB device
+    driver on Marvell Dove boards.
+
+ -- Loïc Minier <loic.minier@ubuntu.com>  Mon, 31 Aug 2009 14:16:21 +0200
+
+casper (1.187) karmic; urgency=low
+
+  * Stop recommending unionfs-fuse, as we're using aufs again in Karmic.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Fri, 28 Aug 2009 12:07:14 +0100
+
+casper (1.186) karmic; urgency=low
+
+  [ Loïc Minier ]
+  * Allow for platform-mxsdhci in ID_PATH to qualify as a "nice_device" i.e.
+    one which can host a livefs.  This is the new name of this device in
+    2.6.31 kernels on Babbage i.MX51.
+
+  [ Steve Kowalik ]
+  * Rename 47unr-ubiquity as 47unr_ubiquity, as scripts with dashes don't
+    get installed into the initramfs. (LP: #411616)
+
+ -- Steve Kowalik <stevenk@ubuntu.com>  Fri, 14 Aug 2009 17:39:34 +1000
+
+casper (1.185) karmic; urgency=low
+
+  * Actually set 47unr-ubiquity as executable. 
+
+ -- Steve Kowalik <stevenk@ubuntu.com>  Wed, 12 Aug 2009 10:41:35 +1000
+
+casper (1.184) karmic; urgency=low
+
+  [ Evan Dandrea ]
+  * Apply the Ubuntu release version to the installer menu entries as well
+    (LP: #406187).
+
+  [ Colin Watson ]
+  * Fix disabling of apt-check (LP: #406191).
+
+  [ Steve Kowalik ]
+  * Remove the UNR ubiquity .desktop hack in 10adduser.
+  * Set ubiquity as a UNR Favourite in 47unr-ubiquity.
+
+ -- Steve Kowalik <stevenk@ubuntu.com>  Fri, 07 Aug 2009 23:11:58 +0100
+
+casper (1.183) karmic; urgency=low
+
+  * Remove erroneous /root prefix on the ubiquity desktop files in
+    10adduser.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Tue, 21 Jul 2009 14:02:34 +0100
+
+casper (1.182) karmic; urgency=low
+
+  [ Evan Dandrea ]
+  * Busybox sed does not preserve ownership, so chown after using it.
+
+  [ Colin Watson ]
+  * Set AutomaticLogin=$USERNAME, not =ubuntu (thanks, arky; LP: #401321).
+
+  [ Mario Limonciello ]
+  * Add support for lzma type archives to casper-new-uuid.
+
+ -- Mario Limonciello <mario_limonciello@dell.com>  Mon, 20 Jul 2009 17:36:55 -0500
+
+casper (1.181) karmic; urgency=low
+
+  * Insert a version number in the name field for ubiquity's desktop file
+    (LP: #154506).
+
+ -- Evan Dandrea <evand@ubuntu.com>  Wed, 15 Jul 2009 10:11:40 +0100
+
+casper (1.180) karmic; urgency=low
+
+  [ Colin Watson ]
+  * scripts/casper-bottom/15autologin: Minor consistency fixes.
+
+  [ Martin Pitt ]
+  * scripts/casper-bottom/15autologin: Update for new gdm custom configuration
+    file (/etc/gdm/custom.conf). (LP: #395861)
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Mon, 06 Jul 2009 16:40:00 +0200
+
+casper (1.179) karmic; urgency=low
+
+  [ Colin Watson ]
+  * If LIVE_MEDIA_PATH is set on the command line, record it in
+    /etc/casper.conf for the benefit of ubiquity.
+
+  [ Martin Pitt ]
+  * scripts/casper-bottom/15autologin: Update to work with new gdm.
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Fri, 03 Jul 2009 14:51:57 +0200
+
+casper (1.178) karmic; urgency=low
+
+  * Ensure that unionfs-fuse isn't killed by /etc/init.d/sendsigs on
+    shutdown (LP: #386010).
+  * Patches from "phl" (https://launchpad.net/~ubuntu-leledy), adjusted by
+    me, to fix snapshot resync:
+    - Avoid using cpio -u -d options if klibc cpio is in use (LP: #384059).
+    - Copy /etc/casper.conf into /root, otherwise we forget snapshot resync
+      settings (LP: #384061).
+    - Adjust the first field of *SNAP entries in casper.conf to be relative
+      to /cow, not /root (LP: #384066).
+    - Prefix $DEST with $MOUNTP in casper-snapshot (LP: #384068).
+    - /etc/init.d/casper is usually called with 'start', so handle that as
+      well as 'stop' to do snapshot resyncing and CD ejecting (LP: #384076).
+  * Fix casper-snapshot(1) syntax to avoid missing spaces between options
+    and their values.
+  * Fix showmounts when used in conjunction with unionfs-fuse; read-only
+    filesystems need to be bind-mounted rather than move-mounted.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Fri, 12 Jun 2009 13:24:28 +0100
+
+casper (1.177) karmic; urgency=low
+
+  * Port from Debian (thanks, Daniel Baumann):
+    - Added live-media-path as suggested by Jordi Pujol.
+    - Tail casper.log and show its messages during boot (thanks, Michal
+      Suchanek; LP: #363886).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Thu, 04 Jun 2009 03:10:59 +0100
+
+casper (1.176) karmic; urgency=low
+
+  [ Colin Watson ]
+  * Fix symlinking of anacron to /bin/true.
+
+  [ Martin Pitt ]
+  * Drop scripts/casper-bottom/38jockey_disable_check: Some drivers, like wl
+    or printer drivers, do need to be advertised in a live system. Jockey has
+    been fixed to not advertise video drivers automatically if the packages
+    aren't available (such as in the live system), and even if we should ever
+    put them back, it is easier to disable the notifications in jockey's
+    handlers instead of here. (LP: #381687)
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Tue, 02 Jun 2009 15:40:05 +0200
+
+casper (1.175) karmic; urgency=low
+
+  * Suppress error message if
+    /root/usr/share/applications/firefox-fav.desktop doesn't exist.
+  * Add unionfs-fuse support.
+  * Automatically fall back to unionfs-fuse if the default union filesystem
+    is not available but unionfs-fuse is.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Sun, 24 May 2009 12:28:00 +0100
+
 casper (1.174) karmic; urgency=low
 
   * debian/control: Increase dependency on initramfs-tools to get the version

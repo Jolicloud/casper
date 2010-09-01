@@ -4,8 +4,6 @@
 PREREQ=""
 DESCRIPTION="Possibly disabling update-initramfs (useless on a live CD)..."
 
-. /scripts/casper-functions
-
 prereqs()
 {
        echo "$PREREQ"
@@ -19,18 +17,29 @@ prereqs)
        ;;
 esac
 
+. /scripts/casper-functions
+
 log_begin_msg "$DESCRIPTION"
 
 chroot /root dpkg-divert --add --rename --quiet \
         /usr/sbin/update-initramfs
 # Running off a USB disk or other writable media.
 if [ -w /root/cdrom ] && \
-   ! grep -q '^[^ ]* /root/cdrom [^ ]* [^ ]*\<ro\>' /proc/mounts; then
+   # rw is guaranteed to be first.
+   grep -q ' /root/cdrom rw[, ]' /proc/self/mountinfo; then
 	cat > /root/usr/sbin/update-initramfs <<'EOF'
 #! /bin/sh
+set -e
 update-initramfs.distrib "$@"
-cp /initrd.img /cdrom/casper/initrd.gz
-cp /vmlinuz /cdrom/casper/vmlinuz
+if [ -e /cdrom/casper/initrd.lz ]; then
+    zcat /initrd.img | lzma -9c >/cdrom/casper/initrd.lz.new
+    mv /cdrom/casper/initrd.lz.new /cdrom/casper/initrd.lz
+else
+    cp /initrd.img /cdrom/casper/initrd.gz.new
+    mv /cdrom/casper/initrd.gz.new /cdrom/casper/initrd.gz
+fi
+cp /vmlinuz /cdrom/casper/vmlinuz.new
+mv /cdrom/casper/vmlinuz.new /cdrom/casper/vmlinuz
 exit 0
 EOF
 else
