@@ -98,7 +98,7 @@ do_stop ()
     [ "$prompt" ] || return 0
 
     # XXX - i18n
-    MSG="Please remove the disc and close the tray (if any) then press ENTER: "
+    MSG="Please remove the USB key and press ENTER to shutdown"
 
     if [ -x /bin/plymouth ] && plymouth --ping; then
         plymouth message --text="$MSG"
@@ -109,8 +109,7 @@ do_stop ()
         echo $MSG > /dev/console
         if [ -x /sbin/usplash_write ]; then
             /sbin/usplash_write "TIMEOUT 86400"
-            /sbin/usplash_write "TEXT-URGENT Please remove the disc, close the tray (if any)"
-            /sbin/usplash_write "TEXT-URGENT and press ENTER to continue"
+            /sbin/usplash_write "TEXT-URGENT $MSG"
         fi
         read x < /dev/console
     fi
