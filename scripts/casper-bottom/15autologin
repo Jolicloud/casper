@@ -65,4 +65,12 @@ if [ -f /root/etc/xdg/lubuntu/lxdm/lxdm.conf ]; then
         /root/etc/xdg/lubuntu/lxdm/lxdm.conf
 fi
 
+if [ -f /root/etc/slim.conf ]; then
+    # Configure SLiM autologin
+    sed -i -r \
+        -e "s/^#auto_login.*\$/auto_login yes/" \
+        -e "s/^#default_user.*\$/default_user $USERNAME/" \
+        /root/etc/slim.conf
+fi
+
 log_end_msg
