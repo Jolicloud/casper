@@ -1,3 +1,10 @@
+casper (1.236jolicloud2) robby; urgency=low
+
+  * Added SLiM into casper's initrd autologin script
+  * Update shutdown message to reference a USB key, not a disk
+
+ -- Adam McDaniel <adam@jolicloud.org>  Fri, 17 Sep 2010 00:24:42 -0600
+
 casper (1.236jolicloud1) robby; urgency=low
 
   * Imported Debian version 1.236
