@@ -103,6 +103,7 @@ do_stop ()
     if [ -x /bin/plymouth ] && plymouth --ping; then
         plymouth message --text="$MSG"
         plymouth watch-keystroke > /dev/null
+        plymouth message --text="Shutting down..."
     else
         stty sane < /dev/console
 
