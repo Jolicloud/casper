@@ -1,3 +1,11 @@
+casper (1.236jolicloud3) robby; urgency=low
+
+  * Don't modify casper.conf with the buildos' BUILD_SYSTEM
+  * Add a "Shutting down..." message in plymouth after pressing Enter to
+    remove the USB key.
+
+ -- Adam McDaniel <adam@jolicloud.org>  Sat, 18 Sep 2010 15:25:51 -0600
+
 casper (1.236jolicloud2) robby; urgency=low
 
   * Added SLiM into casper's initrd autologin script
