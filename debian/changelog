@@ -1,3 +1,12 @@
+casper (1.236jolicloud4) robby; urgency=low
+
+  * Corrected casper's final message ("Rebooting..." or "Shutting
+    Down...") after pressing enter to remove the installation media, so
+    it reflects whether you are rebooting or shutting down based on
+    runlevel.
+
+ -- Adam McDaniel <adam@jolicloud.org>  Thu, 30 Sep 2010 13:44:17 -0600
+
 casper (1.236jolicloud3) robby; urgency=low
 
   * Don't modify casper.conf with the buildos' BUILD_SYSTEM
