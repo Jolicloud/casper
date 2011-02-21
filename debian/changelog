@@ -1,3 +1,11 @@
+casper (1.236.2jolicloud1) robby-1.2; urgency=low
+
+  * Merged casper 1.236.1 & 1.236.2 into robby-1.2
+  * Change casper shutdown message to refer to removal of "installation
+    media", not "USB key". Also, state we're "restarting" not "rebooting"
+
+ -- Adam McDaniel <adam@jolicloud.org>  Mon, 21 Feb 2011 09:13:23 -0700
+
 casper (1.236.2) lucid-proposed; urgency=low
 
   * More fixes to the USB update-initramfs shim (thanks, Evan Dandrea;
