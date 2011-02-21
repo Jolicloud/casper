@@ -73,4 +73,13 @@ if [ -f /root/etc/slim.conf ]; then
         /root/etc/slim.conf
 fi
 
+if [ -d /root/etc/jolicloud-displaymanager ]; then
+    # Configure Jolicloud Display Manager autologin
+    cat << EOF > /root/etc/jolicloud-displaymanager/10casper
+[autologin]
+enabled=true
+login=$USERNAME
+EOF
+fi
+
 log_end_msg
