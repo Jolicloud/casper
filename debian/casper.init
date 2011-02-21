@@ -98,12 +98,12 @@ do_stop ()
     [ "$prompt" ] || return 0
 
     # XXX - i18n
-    PRE_MSG="Please remove the USB key and press ENTER to continue"
+    PRE_MSG="Please remove the installation media and press ENTER to continue"
     POST_MSG=""
     if [ "$RUNLEVEL" = "0" ]; then
         POST_MSG="Shutting down..."
     elif [ "$RUNLEVEL" = "6" ]; then
-        POST_MSG="Rebooting..."
+        POST_MSG="Restarting..."
     fi
 
     if [ -x /bin/plymouth ] && plymouth --ping; then
