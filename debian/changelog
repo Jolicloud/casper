@@ -1,3 +1,10 @@
+casper (1.236.2jolicloud2) robby-1.2; urgency=low
+
+  * Added Jolicloud Display Manager into casper's initrd autologin
+    script
+
+ -- Jérémy Bethmont <jerem@jolicloud.org>  Mon, 21 Feb 2011 17:50:00 +0100
+
 casper (1.236.2jolicloud1) robby-1.2; urgency=low
 
   * Merged casper 1.236.1 & 1.236.2 into robby-1.2
