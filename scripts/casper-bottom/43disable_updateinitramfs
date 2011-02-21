@@ -27,21 +27,8 @@ chroot /root dpkg-divert --add --rename --quiet \
 if [ -w /root/cdrom ] && \
    # rw is guaranteed to be first.
    grep -q ' /root/cdrom rw[, ]' /proc/self/mountinfo; then
-	cat > /root/usr/sbin/update-initramfs <<'EOF'
-#! /bin/sh
-set -e
-update-initramfs.distrib "$@"
-if [ -e /cdrom/casper/initrd.lz ]; then
-    zcat /initrd.img | lzma -9c >/cdrom/casper/initrd.lz.new
-    mv /cdrom/casper/initrd.lz.new /cdrom/casper/initrd.lz
-else
-    cp /initrd.img /cdrom/casper/initrd.gz.new
-    mv /cdrom/casper/initrd.gz.new /cdrom/casper/initrd.gz
-fi
-cp /vmlinuz /cdrom/casper/vmlinuz.new
-mv /cdrom/casper/vmlinuz.new /cdrom/casper/vmlinuz
-exit 0
-EOF
+	ln -s /usr/share/casper/casper-update-initramfs \
+	      /root/usr/sbin/update-initramfs
 else
 	cat > /root/usr/sbin/update-initramfs <<EOF
 #! /bin/sh

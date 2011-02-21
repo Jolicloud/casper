@@ -1,5 +1,15 @@
 #! /bin/sh
 
+# If running from writable media, make sure that update-initramfs is
+# properly a symlink.
+if [ "$1" = configure ] && dpkg --compare-versions "$2" lt-nl 1.236.1 && \
+   [ -w /cdrom ] && [ -e /usr/sbin/update-initramfs.distrib ] && \
+   [ ! -L /usr/sbin/update-initramfs ] && \
+   fgrep -qs update-initramfs.distrib /usr/sbin/update-initramfs; then
+    ln -nsf /usr/share/casper/casper-update-initramfs \
+            /usr/sbin/update-initramfs
+fi
+
 update-initramfs -u
 
 #DEBHELPER#
