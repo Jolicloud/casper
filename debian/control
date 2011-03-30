@@ -4,7 +4,9 @@ Priority: optional
 Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: debhelper (>= 7.0.50~), lsb-release, libplymouth-dev (>= 0.8.0~-13), pkg-config
 Standards-Version: 3.8.4
-Vcs-Bzr: lp:ubuntu/casper
+XS-Ubuntu-Vcs-Bzr: lp:ubuntu/casper
+Vcs-Git: git://github.com/jolicloud/casper.git
+Vcs-Browser: https://github.com/jolicloud/casper
 
 Package: casper
 Architecture: any
