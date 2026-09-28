@@ -86,7 +86,10 @@ void plymouth_failure(ply_boot_client_t *client, char *format, ...) {
   va_list argp;
 
   va_start(argp, format);
-  vasprintf(&s, format, argp);
+  if (vasprintf(&s, format, argp) < 0) {
+    va_end(argp);
+    return;
+  }
   va_end(argp);
 
   if (got_plymouth) {
@@ -105,7 +108,10 @@ void plymouth_text(ply_boot_client_t *client, char *format, ...) {
   va_list argp;
 
   va_start(argp, format);
-  vasprintf(&s, format, argp);
+  if (vasprintf(&s, format, argp) < 0) {
+    va_end(argp);
+    return;
+  }
   va_end(argp);
 
   if (got_plymouth) {
@@ -126,14 +132,21 @@ void plymouth_prompt(ply_boot_client_t *client, char *format, ...) {
   va_list argp;
 
   va_start(argp, format);
-  vasprintf(&s, format, argp);
+  if (vasprintf(&s, format, argp) < 0) {
+    va_end(argp);
+    return;
+  }
   va_end(argp);
 
   if (got_plymouth) {
-    asprintf(&s1, "keys:%s", s);
+    if (asprintf(&s1, "keys:%s", s) < 0) {
+      free(s);
+      return;
+    }
     ply_boot_client_tell_daemon_to_display_message(client, s1,
                                                    plymouth_response,
                                                    plymouth_response, NULL);
+    free(s1);
 
     ply_boot_client_ask_daemon_to_watch_for_keystroke(client, NULL,
                                                       plymouth_answer,
@@ -156,7 +169,10 @@ void plymouth_urgent(ply_boot_client_t *client, char *format, ...) {
   va_list argp;
 
   va_start(argp, format);
-  vasprintf(&s, format, argp);
+  if (vasprintf(&s, format, argp) < 0) {
+    va_end(argp);
+    return;
+  }
   va_end(argp);
 
   if (got_plymouth) {
@@ -176,7 +192,10 @@ void plymouth_success(ply_boot_client_t *client, char *format, ...) {
   va_list argp;
 
   va_start(argp, format);
-  vasprintf(&s, format, argp);
+  if (vasprintf(&s, format, argp) < 0) {
+    va_end(argp);
+    return;
+  }
   va_end(argp);
 
   if (got_plymouth) {
@@ -199,7 +218,8 @@ void plymouth_progress(ply_boot_client_t *client, int progress) {
   prevprogress = progress;
 
   if (got_plymouth) {
-    asprintf(&s, "md5check:verifying:%d", progress);
+    if (asprintf(&s, "md5check:verifying:%d", progress) < 0)
+      return;
     ply_boot_client_update_daemon(client, s, plymouth_response,
                                   plymouth_response, NULL);
     ply_event_loop_process_pending_events(ply_event_loop);
