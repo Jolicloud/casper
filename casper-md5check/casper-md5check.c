@@ -327,7 +327,8 @@ int main(int argc, char **argv) {
   }
   fclose(md5_file);
   if (failed) {
-    plymouth_urgent(client, "Check finished: errors found in %d files!", failed);
+    plymouth_urgent(client, "Check finished: errors found in %d %s!",
+                    failed, failed == 1 ? "file" : "files");
   } else {
     plymouth_urgent(client, "Check finished: no errors found");
   }
